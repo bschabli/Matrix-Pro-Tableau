@@ -159,6 +159,8 @@ class MatrixApp {
     if (this._isLoading) return;
     this._isLoading = true;
 
+    const isInitialLoad = !this.renderer || !document.getElementById('matrix-container').innerHTML;
+
     try {
       // Apply configured theme
       const currentTheme = (this.config && this.config.theme) ? this.config.theme : 'theme-light';
@@ -169,7 +171,7 @@ class MatrixApp {
       // Apply UI element visibility via CSS classes
       this._applyVisibilityClasses();
 
-      this._showLoading(t('loading_shelves'));
+      if (isInitialLoad) this._showLoading(t('loading_shelves'));
 
       // 1. Read field assignments directly from Tableau Marks card shelves
       const encodings = await this.connector.getVisualSpecificationEncodings();
@@ -192,7 +194,7 @@ class MatrixApp {
         return;
       }
 
-      this._showLoading(t('loading_data'));
+      if (isInitialLoad) this._showLoading(t('loading_data'));
 
       // 2. Fetch raw data from the worksheet
       const rawData = await this.connector.fetchData(this.config.worksheetName);
@@ -204,7 +206,7 @@ class MatrixApp {
         return;
       }
 
-      this._showLoading(t('transforming_data'));
+      if (isInitialLoad) this._showLoading(t('transforming_data'));
 
       // 3. Transform flat data → hierarchical matrix
       this.engine = new PivotEngine({
