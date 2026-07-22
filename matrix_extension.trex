@@ -11,8 +11,8 @@
     <author name="Matrix Pro Extension" email="dev@matrixpro.extension" website="https://github.com/matrixpro" />
     <min-api-version>1.11</min-api-version>
     <source-location>
-      <!-- For development: local HTTP server. For production: HTTPS URL -->
-      <url>http://localhost:8765/index.html</url>
+      <!-- For production: GitHub Pages URL -->
+      <url>https://arley-economist-dev.github.io/Matrix-Pro-Tableau/index.html</url>
     </source-location>
 
     <!-- 32x32 base64-encoded PNG icon (grid/matrix icon placeholder) -->
