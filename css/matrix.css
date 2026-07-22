@@ -1,0 +1,1168 @@
+/* ==========================================================================
+   MATRIX PRO — Hierarchical Matrix Extension for Tableau
+   Complete CSS Design System
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CSS Custom Properties (Design Tokens)
+   -------------------------------------------------------------------------- */
+:root {
+  /* ── Typography ── */
+  --matrix-font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+  --matrix-font-size: 12px;
+  --matrix-font-size-sm: 11px;
+  --matrix-font-size-lg: 13px;
+  --matrix-header-weight: 600;
+  --matrix-body-weight: 400;
+  --matrix-subtotal-weight: 600;
+
+  /* ── Colors — Default Light Theme ── */
+  --matrix-bg: #ffffff;
+  --matrix-text: #201f1e;
+  --matrix-text-secondary: #605e5c;
+  --matrix-header-bg: #f3f2f1;
+  --matrix-header-bg-hover: #e1dfdd;
+  --matrix-header-text: #201f1e;
+  --matrix-header-border: #d2d0ce;
+  --matrix-row-bg: #ffffff;
+  --matrix-row-bg-alt: #f8f9fa;
+  --matrix-row-hover: #e6f2ff;
+  --matrix-row-selected: #d0e7ff;
+  --matrix-subtotal-bg: #eae8e6;
+  --matrix-subtotal-text: #11100f;
+  --matrix-grandtotal-bg: #d2d0ce;
+  --matrix-grandtotal-text: #000000;
+  --matrix-border: #e1dfdd;
+  --matrix-border-strong: #c8c6c4;
+  --matrix-accent: #0078d4;
+  --matrix-accent-hover: #106ebe;
+  --matrix-accent-light: #deecf9;
+
+  /* ── Toolbar ── */
+  --toolbar-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --toolbar-text: #ffffff;
+  --toolbar-btn-bg: rgba(255, 255, 255, 0.15);
+  --toolbar-btn-hover: rgba(255, 255, 255, 0.25);
+  --toolbar-btn-active: rgba(255, 255, 255, 0.35);
+  --toolbar-height: 48px;
+  --toolbar-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  /* ── Spacing ── */
+  --cell-padding-x: 10px;
+  --cell-padding-y: 5px;
+  --indent-size: 18px;
+  --row-min-height: 28px;
+  --expand-btn-size: 16px;
+
+  /* ── Effects ── */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* ── Conditional Formatting Colors ── */
+  --cf-min: #f8696b;
+  --cf-mid: #ffeb84;
+  --cf-max: #63be7b;
+  --cf-bar: #4472c4;
+}
+
+/* ── Explicit Theme Classes ── */
+body.theme-light,
+#app.theme-light,
+.matrix-wrapper.theme-light {
+  --toolbar-bg: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+  --status-bar-bg: #0078d4;
+  --status-bar-text: #ffffff;
+  --status-bar-label: #deecf9;
+  --matrix-bg: #ffffff;
+  --matrix-text: #201f1e;
+  --matrix-text-secondary: #605e5c;
+  --matrix-header-bg: #f3f2f1;
+  --matrix-header-bg-hover: #e1dfdd;
+  --matrix-header-text: #201f1e;
+  --matrix-header-border: #d2d0ce;
+  --matrix-row-bg: #ffffff;
+  --matrix-row-bg-alt: #f8f9fa;
+  --matrix-row-hover: #deecf9;
+  --matrix-row-selected: #c7e0f4;
+  --matrix-subtotal-bg: #eae8e6;
+  --matrix-subtotal-text: #11100f;
+  --matrix-grandtotal-bg: #d2d0ce;
+  --matrix-grandtotal-text: #000000;
+  --matrix-border: #e1dfdd;
+  --matrix-border-strong: #c8c6c4;
+}
+
+body.theme-dark,
+#app.theme-dark,
+.matrix-wrapper.theme-dark {
+  --toolbar-bg: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+  --status-bar-bg: #1f2937;
+  --status-bar-text: #f9fafb;
+  --status-bar-label: #9ca3af;
+  --matrix-bg: #1e1e1e;
+  --matrix-text: #e0e0e0;
+  --matrix-text-secondary: #a0a0a0;
+  --matrix-header-bg: #2d2d2d;
+  --matrix-header-bg-hover: #3a3a3a;
+  --matrix-header-text: #ffffff;
+  --matrix-header-border: #404040;
+  --matrix-row-bg: #1e1e1e;
+  --matrix-row-bg-alt: #252525;
+  --matrix-row-hover: #1a3a5c;
+  --matrix-row-selected: #1c4a7e;
+  --matrix-subtotal-bg: #333333;
+  --matrix-subtotal-text: #f0f0f0;
+  --matrix-grandtotal-bg: #404040;
+  --matrix-grandtotal-text: #ffffff;
+  --matrix-border: #404040;
+  --matrix-border-strong: #555555;
+}
+
+body.theme-blue,
+#app.theme-blue,
+.matrix-wrapper.theme-blue {
+  --toolbar-bg: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  --status-bar-bg: #1e3a8a;
+  --status-bar-text: #ffffff;
+  --status-bar-label: #93c5fd;
+  --matrix-bg: #ffffff;
+  --matrix-text: #0f172a;
+  --matrix-text-secondary: #475569;
+  --matrix-header-bg: #1e40af;
+  --matrix-header-bg-hover: #1e3a8a;
+  --matrix-header-text: #ffffff;
+  --matrix-header-border: #3b82f6;
+  --matrix-row-bg: #ffffff;
+  --matrix-row-bg-alt: #f0f9ff;
+  --matrix-row-hover: #e0f2fe;
+  --matrix-row-selected: #bae6fd;
+  --matrix-subtotal-bg: #dbeafe;
+  --matrix-subtotal-text: #1e3a8a;
+  --matrix-grandtotal-bg: #93c5fd;
+  --matrix-grandtotal-text: #1e3a8a;
+  --matrix-border: #cbd5e1;
+  --matrix-border-strong: #94a3b8;
+}
+
+/* --------------------------------------------------------------------------
+   Reset & Base
+   -------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--matrix-font-family);
+  font-size: var(--matrix-font-size);
+  color: var(--matrix-text);
+  background: var(--matrix-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --------------------------------------------------------------------------
+   App Layout
+   -------------------------------------------------------------------------- */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   Toolbar
+   -------------------------------------------------------------------------- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--toolbar-height);
+  min-height: var(--toolbar-height);
+  padding: 0 16px;
+  background: var(--toolbar-bg);
+  color: var(--toolbar-text);
+  box-shadow: var(--toolbar-shadow);
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.toolbar-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin-right: auto;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-title .icon {
+  font-size: 18px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.25);
+  margin: 0 4px;
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-sm);
+  background: var(--toolbar-btn-bg);
+  color: var(--toolbar-text);
+  font-family: var(--matrix-font-family);
+  font-size: var(--matrix-font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+
+.toolbar-btn:hover {
+  background: var(--toolbar-btn-hover);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.toolbar-btn:active {
+  background: var(--toolbar-btn-active);
+  transform: translateY(0);
+}
+
+.toolbar-btn .btn-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Matrix Container (scrollable area)
+   -------------------------------------------------------------------------- */
+.matrix-wrapper {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background: var(--matrix-bg);
+}
+
+/* Custom scrollbar */
+.matrix-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.matrix-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.matrix-wrapper::-webkit-scrollbar-thumb {
+  background: var(--matrix-border-strong);
+  border-radius: 4px;
+}
+
+.matrix-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--matrix-text-secondary);
+}
+
+.matrix-wrapper::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* --------------------------------------------------------------------------
+   Matrix Table
+   -------------------------------------------------------------------------- */
+.matrix-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--matrix-font-size);
+  table-layout: auto;
+}
+
+/* ── Matrix Configuration Modifiers ── */
+
+/* Gridline Modifiers */
+.matrix-table.no-hgrid tbody td,
+.matrix-table.no-hgrid thead th {
+  border-bottom-color: transparent !important;
+}
+
+.matrix-table.no-vgrid tbody td,
+.matrix-table.no-vgrid thead th {
+  border-right-color: transparent !important;
+}
+
+/* Zebra Striping Modifier */
+.matrix-table.no-zebra tbody tr:nth-child(even) td,
+.matrix-table.no-zebra tbody tr:nth-child(even) td.row-header {
+  background: var(--matrix-row-bg) !important;
+}
+
+/* Row Density Modifiers */
+.matrix-table.density-compact td,
+.matrix-table.density-compact th {
+  padding: 3px 8px !important;
+  min-height: 22px !important;
+}
+
+.matrix-table.density-normal td,
+.matrix-table.density-normal th {
+  padding: 6px 10px !important;
+  min-height: 28px !important;
+}
+
+.matrix-table.density-spacious td,
+.matrix-table.density-spacious th {
+  padding: 10px 14px !important;
+  min-height: 36px !important;
+}
+
+/* Font Size Inheritance */
+.matrix-table td,
+.matrix-table th,
+.matrix-table .row-label,
+.matrix-table .value-cell {
+  font-size: inherit;
+}
+
+/* --------------------------------------------------------------------------
+   Table Header (thead)
+   -------------------------------------------------------------------------- */
+.matrix-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.matrix-table thead th {
+  background: var(--matrix-header-bg);
+  color: var(--matrix-header-text);
+  font-weight: var(--matrix-header-weight);
+  padding: var(--cell-padding-y) var(--cell-padding-x);
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--matrix-header-border);
+  border-right: 1px solid var(--matrix-border);
+  position: relative;
+  min-height: var(--row-min-height);
+  user-select: none;
+}
+
+.matrix-table thead th:last-child {
+  border-right: none;
+}
+
+/* Column header levels */
+.matrix-table thead tr:nth-child(1) th,
+.matrix-table thead tr:nth-child(2) th,
+.matrix-table thead tr:nth-child(3) th {
+  background: var(--matrix-header-bg);
+}
+
+/* Measure header row (last row in thead) */
+.matrix-table thead tr:last-child th {
+  border-bottom: 2px solid var(--matrix-accent);
+  font-size: var(--matrix-font-size-sm);
+}
+
+/* Value column headers align right */
+.matrix-table thead th.col-value {
+  text-align: right;
+}
+
+/* Header hover */
+.matrix-table thead th:hover {
+  background: var(--matrix-header-bg-hover);
+}
+
+/* Row header spacer cell (top-left corner) */
+.matrix-table thead th.row-header-spacer {
+  background: var(--matrix-header-bg);
+  position: sticky;
+  left: 0;
+  z-index: 30;
+  min-width: 180px;
+  border-right: 2px solid var(--matrix-header-border);
+}
+
+.spacer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.spacer-label {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.corner-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.corner-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 4px;
+  background: var(--matrix-row-bg-alt);
+  color: var(--matrix-header-text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.corner-btn:hover {
+  background: var(--matrix-accent);
+  color: #ffffff;
+  border-color: var(--matrix-accent);
+}
+
+/* Total column header */
+.matrix-table thead th.col-total-header {
+  background: var(--matrix-subtotal-bg);
+  font-weight: 700;
+  border-left: 2px solid var(--matrix-header-border);
+}
+
+/* --------------------------------------------------------------------------
+   Table Body (tbody)
+   -------------------------------------------------------------------------- */
+.matrix-table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.matrix-table tbody td {
+  padding: var(--cell-padding-y) var(--cell-padding-x);
+  border-bottom: 1px solid var(--matrix-border);
+  border-right: 1px solid var(--matrix-border);
+  min-height: var(--row-min-height);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.matrix-table tbody td:last-child {
+  border-right: none;
+}
+
+/* Alternating rows */
+.matrix-table tbody tr:nth-child(even) td {
+  background: var(--matrix-row-bg-alt);
+}
+
+/* Hover */
+.matrix-table tbody tr:hover td {
+  background: var(--matrix-row-hover);
+}
+
+/* Selected */
+.matrix-table tbody tr.selected td {
+  background: var(--matrix-row-selected);
+}
+
+/* --------------------------------------------------------------------------
+   Row Header Cell (first column — sticky)
+   -------------------------------------------------------------------------- */
+.matrix-table tbody td.row-header {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: var(--matrix-row-bg);
+  border-right: 2px solid var(--matrix-header-border);
+  font-weight: 500;
+  cursor: default;
+  min-width: 180px;
+}
+
+/* Inherit alternating bg on sticky cell */
+.matrix-table tbody tr:nth-child(even) td.row-header {
+  background: var(--matrix-row-bg-alt);
+}
+
+.matrix-table tbody tr:hover td.row-header {
+  background: var(--matrix-row-hover);
+}
+
+.matrix-table tbody tr.selected td.row-header {
+  background: var(--matrix-row-selected);
+}
+
+/* Row header inner layout */
+.row-header-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.row-header-indent {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Expand / Collapse Button
+   -------------------------------------------------------------------------- */
+.expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--expand-btn-size);
+  height: var(--expand-btn-size);
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--matrix-text-secondary);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
+}
+
+.expand-btn:hover {
+  background: var(--matrix-accent-light);
+  color: var(--matrix-accent);
+}
+
+.expand-btn:active {
+  transform: scale(0.9);
+}
+
+/* Triangle icon via CSS */
+.expand-btn::before {
+  content: '';
+  display: block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  transition: transform var(--transition-fast);
+}
+
+/* Collapsed: right-pointing triangle */
+.expand-btn.collapsed::before {
+  border-width: 4px 0 4px 6px;
+  border-color: transparent transparent transparent var(--matrix-text-secondary);
+}
+
+.expand-btn.collapsed:hover::before {
+  border-color: transparent transparent transparent var(--matrix-accent);
+}
+
+/* Expanded: down-pointing triangle */
+.expand-btn.expanded::before {
+  border-width: 6px 4px 0 4px;
+  border-color: var(--matrix-text-secondary) transparent transparent transparent;
+}
+
+.expand-btn.expanded:hover::before {
+  border-color: var(--matrix-accent) transparent transparent transparent;
+}
+
+/* Leaf placeholder (no children — keeps alignment) */
+.expand-btn-placeholder {
+  display: inline-block;
+  width: var(--expand-btn-size);
+  height: var(--expand-btn-size);
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Value Cells
+   -------------------------------------------------------------------------- */
+.matrix-table tbody td.value-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  cursor: pointer;
+  padding-right: 12px;
+}
+
+.matrix-table tbody td.value-cell:hover {
+  outline: 2px solid var(--matrix-accent);
+  outline-offset: -2px;
+  border-radius: 2px;
+}
+
+/* Total column cells */
+.matrix-table tbody td.value-cell.col-total {
+  background: var(--matrix-subtotal-bg);
+  font-weight: 600;
+  border-left: 2px solid var(--matrix-header-border);
+}
+
+.matrix-table tbody tr:hover td.value-cell.col-total {
+  background: var(--matrix-row-hover);
+}
+
+/* Null / empty values */
+.matrix-table tbody td.value-cell.value-null {
+  color: var(--matrix-text-secondary);
+  font-style: italic;
+  opacity: 0.6;
+}
+
+/* --------------------------------------------------------------------------
+   Subtotal Rows
+   -------------------------------------------------------------------------- */
+.matrix-table tbody tr.subtotal-row td {
+  background: var(--matrix-subtotal-bg) !important;
+  font-weight: var(--matrix-subtotal-weight);
+  color: var(--matrix-subtotal-text);
+  border-bottom: 1px solid var(--matrix-border-strong);
+  border-top: 1px solid var(--matrix-border);
+}
+
+.matrix-table tbody tr.subtotal-row td.row-header {
+  background: var(--matrix-subtotal-bg) !important;
+  font-weight: 700;
+}
+
+.matrix-table tbody tr.subtotal-row:hover td {
+  background: var(--matrix-header-bg-hover) !important;
+}
+
+/* Subtotal level indicator */
+.matrix-table tbody tr.subtotal-row.subtotal-level-0 td {
+  background: var(--matrix-grandtotal-bg) !important;
+  font-weight: 700;
+  border-bottom: 2px solid var(--matrix-border-strong);
+}
+
+/* --------------------------------------------------------------------------
+   Grand Total Row (tfoot)
+   -------------------------------------------------------------------------- */
+.matrix-table tfoot {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+}
+
+.matrix-table tfoot td {
+  background: var(--matrix-grandtotal-bg) !important;
+  color: var(--matrix-grandtotal-text);
+  font-weight: 700;
+  padding: var(--cell-padding-y) var(--cell-padding-x);
+  border-top: 2px solid var(--matrix-border-strong);
+  border-bottom: none;
+  border-right: 1px solid var(--matrix-border);
+  white-space: nowrap;
+}
+
+.matrix-table tfoot td:last-child {
+  border-right: none;
+}
+
+.matrix-table tfoot td.row-header {
+  position: sticky;
+  left: 0;
+  z-index: 25;
+  background: var(--matrix-grandtotal-bg) !important;
+  border-right: 2px solid var(--matrix-header-border);
+}
+
+.matrix-table tfoot td.value-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  padding-right: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   Hidden Rows (Collapsed Children)
+   -------------------------------------------------------------------------- */
+.matrix-table tbody tr.row-hidden {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   Conditional Formatting
+   -------------------------------------------------------------------------- */
+
+/* Color scale backgrounds (applied via inline styles in JS) */
+.cf-cell {
+  position: relative;
+}
+
+/* Data bar overlay */
+.cf-bar {
+  position: absolute;
+  left: 2px;
+  bottom: 2px;
+  height: 3px;
+  background: var(--cf-bar);
+  border-radius: 2px;
+  opacity: 0.6;
+  transition: width var(--transition-normal);
+}
+
+/* --------------------------------------------------------------------------
+   Status Bar
+   -------------------------------------------------------------------------- */
+/* ── UI Element Visibility Overrides ── */
+body.no-statusbar #status-bar,
+body.no-statusbar .status-bar,
+#app.no-statusbar #status-bar,
+#app.no-statusbar .status-bar {
+  display: none !important;
+}
+
+body.no-toolbar #main-toolbar,
+body.no-toolbar .toolbar,
+#app.no-toolbar #main-toolbar,
+#app.no-toolbar .toolbar {
+  display: none !important;
+}
+
+body.no-export #export-group,
+body.no-export .export-divider,
+#app.no-export #export-group,
+#app.no-export .export-divider {
+  display: none !important;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 16px;
+  height: 28px;
+  min-height: 28px;
+  background: var(--status-bar-bg, #0078d4);
+  border-top: 1px solid var(--matrix-border);
+  font-size: var(--matrix-font-size-sm);
+  color: var(--status-bar-text, #ffffff);
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-item .status-label {
+  opacity: 0.9;
+  color: var(--status-bar-label, #deecf9);
+}
+
+.status-item .status-value {
+  font-weight: 600;
+  color: var(--status-bar-text, #ffffff);
+}
+
+.status-bar .status-spacer {
+  flex: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Welcome / Empty State
+   -------------------------------------------------------------------------- */
+.welcome-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 40px;
+  animation: fadeIn 0.5s ease;
+}
+
+.welcome-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.welcome-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--matrix-text);
+  margin-bottom: 8px;
+}
+
+.welcome-subtitle {
+  font-size: 14px;
+  color: var(--matrix-text-secondary);
+  margin-bottom: 24px;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.welcome-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--matrix-accent);
+  color: #ffffff;
+  font-family: var(--matrix-font-family);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.welcome-btn:hover {
+  background: var(--matrix-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.welcome-btn:active {
+  transform: translateY(0);
+}
+
+/* --------------------------------------------------------------------------
+   Loading Spinner
+   -------------------------------------------------------------------------- */
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--matrix-border);
+  border-top-color: var(--matrix-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-text {
+  font-size: 13px;
+  color: var(--matrix-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Error State
+   -------------------------------------------------------------------------- */
+.error-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 40px;
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.error-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #d13438;
+  margin-bottom: 8px;
+}
+
+.error-message {
+  font-size: 13px;
+  color: var(--matrix-text-secondary);
+  max-width: 500px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  word-break: break-word;
+}
+
+/* --------------------------------------------------------------------------
+   Configuration Dialog Styles (config.html)
+   -------------------------------------------------------------------------- */
+.config-container {
+  font-family: var(--matrix-font-family);
+  padding: 24px;
+  max-width: 600px;
+  margin: 0 auto;
+  color: var(--matrix-text);
+}
+
+.config-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-section {
+  margin-bottom: 20px;
+}
+
+.config-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--matrix-text-secondary);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--matrix-border);
+}
+
+.config-field-list {
+  list-style: none;
+  padding: 0;
+}
+
+.config-field-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--matrix-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  cursor: grab;
+  transition: all var(--transition-fast);
+  background: var(--matrix-row-bg);
+  font-size: 13px;
+}
+
+.config-field-item:hover {
+  border-color: var(--matrix-accent);
+  background: var(--matrix-accent-light);
+}
+
+.config-field-item .field-icon {
+  font-size: 14px;
+  opacity: 0.5;
+}
+
+.config-field-item .field-name {
+  flex: 1;
+}
+
+.config-field-item .field-type {
+  font-size: 11px;
+  color: var(--matrix-text-secondary);
+  background: var(--matrix-header-bg);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.config-well {
+  min-height: 60px;
+  padding: 8px;
+  border: 2px dashed var(--matrix-border);
+  border-radius: var(--radius-md);
+  background: var(--matrix-row-bg-alt);
+  margin-bottom: 12px;
+  transition: all var(--transition-fast);
+}
+
+.config-well.drag-over {
+  border-color: var(--matrix-accent);
+  background: var(--matrix-accent-light);
+}
+
+.config-well-label {
+  font-size: 11px;
+  color: var(--matrix-text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.config-well-empty {
+  text-align: center;
+  padding: 12px;
+  color: var(--matrix-text-secondary);
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Aggregation function selector */
+.agg-select {
+  font-family: var(--matrix-font-family);
+  font-size: 11px;
+  padding: 2px 6px;
+  border: 1px solid var(--matrix-border);
+  border-radius: 3px;
+  background: var(--matrix-row-bg);
+  color: var(--matrix-text);
+  cursor: pointer;
+}
+
+/* Config dialog buttons */
+.config-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--matrix-border);
+}
+
+.config-btn {
+  padding: 8px 20px;
+  border: 1px solid var(--matrix-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--matrix-font-family);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.config-btn.primary {
+  background: var(--matrix-accent);
+  color: #ffffff;
+  border-color: var(--matrix-accent);
+}
+
+.config-btn.primary:hover {
+  background: var(--matrix-accent-hover);
+}
+
+.config-btn.secondary {
+  background: var(--matrix-row-bg);
+  color: var(--matrix-text);
+}
+
+.config-btn.secondary:hover {
+  background: var(--matrix-header-bg);
+}
+
+/* Worksheet selector */
+.worksheet-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--matrix-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--matrix-font-family);
+  font-size: 13px;
+  background: var(--matrix-row-bg);
+  color: var(--matrix-text);
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+
+.worksheet-select:focus {
+  outline: none;
+  border-color: var(--matrix-accent);
+  box-shadow: 0 0 0 2px var(--matrix-accent-light);
+}
+
+/* --------------------------------------------------------------------------
+   Tooltip
+   -------------------------------------------------------------------------- */
+.matrix-tooltip {
+  position: fixed;
+  padding: 6px 10px;
+  background: #323130;
+  color: #ffffff;
+  font-size: 11px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  max-width: 250px;
+  line-height: 1.4;
+}
+
+.matrix-tooltip.visible {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Animations
+   -------------------------------------------------------------------------- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; }
+  to   { opacity: 1; max-height: 500px; }
+}
+
+/* Fade in rows on expand */
+.matrix-table tbody tr.row-entering {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+/* --------------------------------------------------------------------------
+   Print Styles
+   -------------------------------------------------------------------------- */
+@media print {
+  .toolbar,
+  .status-bar {
+    display: none !important;
+  }
+
+  .matrix-wrapper {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  .matrix-table thead th,
+  .matrix-table tbody td,
+  .matrix-table tfoot td {
+    border: 1px solid #999 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .matrix-table tbody tr.subtotal-row td {
+    background: #eee !important;
+  }
+
+  .matrix-table tfoot td {
+    background: #ddd !important;
+  }
+}

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest manifest-version="0.1" xmlns="http://www.tableau.com/xml/extension_manifest">
+  <worksheet-extension id="com.matrixpro.extension" extension-version="1.0.0">
+    <default-locale>en_US</default-locale>
+    <name resource-id="name">Matrix Pro</name>
+    <description resource-id="description">
+      Hierarchical Matrix and Pivot Visual for Tableau.
+      Supports multi-level row/column grouping, expand/collapse, subtotals,
+      conditional formatting, cross-filtering, and Excel export.
+    </description>
+    <author name="Matrix Pro Extension" email="dev@matrixpro.extension" website="https://github.com/matrixpro" />
+    <min-api-version>1.11</min-api-version>
+    <source-location>
+      <!-- For development: local HTTP server. For production: HTTPS URL -->
+      <url>http://localhost:8765/index.html</url>
+    </source-location>
+
+    <!-- 32x32 base64-encoded PNG icon (grid/matrix icon placeholder) -->
+    <icon>
+      iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAKlJREFUWEft
+      ljEOgDAMQ9v7H5ouSCyVHMdWYWGqKr/4OwkA8PXhq/tBAewKmLvfA+ABwFES5ahjsHPujohnb8
+      YSYc+FmCuQeXwL0ogpBEf2AroRUXNsB36vgLKCSiyNqILTJA+oqIUTREHN7AWTxPNuO0DkAScE
+      hCHHAuV8OwSlCijH5BSkIceiVAGJxzYBIRCfJKtA7gBLZy9j5e0E0ULeBP8K+P0KvAHMbEEhFu
+      dbQQAAAABJRU5ErkJggg==
+    </icon>
+
+    <!-- Enable "Configure" option in the right-click context menu -->
+    <context-menu>
+      <configure-context-menu-item />
+    </context-menu>
+
+    <!-- Encoding Shelves for Tableau Marks Card (Power BI Style Drop Zones) -->
+    <encoding id="rows">
+      <display-name>Rows</display-name>
+    </encoding>
+    <encoding id="columns">
+      <display-name>Columns</display-name>
+    </encoding>
+    <encoding id="values">
+      <display-name>Values</display-name>
+    </encoding>
+  </worksheet-extension>
+
+  <!-- Localized resource strings -->
+  <resources>
+    <resource id="name">
+      <text locale="en_US">Matrix Pro</text>
+    </resource>
+    <resource id="description">
+      <text locale="en_US">
+        Hierarchical Matrix and Pivot Visual for Tableau.
+        Supports multi-level row/column grouping, drill-down, subtotals, and cross-filtering.
+      </text>
+    </resource>
+  </resources>
+</manifest>

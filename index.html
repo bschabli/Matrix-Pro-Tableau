@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matrix Pro — Tableau Extension</title>
+  <meta name="description" content="Hierarchical Matrix visual extension for Tableau dashboards with multi-level grouping, drill-down, and cross-filtering.">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       External Libraries (CDN — Network-Enabled Extension)
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <!-- Tableau Extensions API (local copy preferred, CDN fallback) -->
+  <script src="js/tableau.extensions.1.latest.min.js"></script>
+  <script>
+    if (typeof tableau === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api@main/lib/tableau.extensions.1.latest.js"><\/script>');
+    }
+  </script>
+
+  <!-- SheetJS for Excel export -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+  <!-- Google Fonts: Inter (modern typography) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       Application Styles
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <link rel="stylesheet" href="css/matrix.css">
+
+  <style>
+    /* Override font-family with Inter from Google Fonts */
+    :root {
+      --matrix-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Overlay container for loading/welcome/error screens */
+    #overlay {
+      position: absolute;
+      top: var(--toolbar-height);
+      left: 0;
+      right: 0;
+      bottom: 28px; /* status bar height */
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--matrix-bg);
+    }
+  </style>
+</head>
+<body>
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       Application Layout
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="app">
+
+    <!-- ─── Toolbar ─── -->
+    <div class="toolbar" id="main-toolbar">
+      <div class="toolbar-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 6px; flex-shrink: 0;">
+          <rect width="24" height="24" rx="6" fill="url(#mpro-grad-toolbar)"/>
+          <rect x="5" y="5" width="6" height="6" rx="1.5" fill="#FFFFFF" fill-opacity="0.95"/>
+          <rect x="13" y="5" width="6" height="6" rx="1.5" fill="#FFFFFF" fill-opacity="0.5"/>
+          <rect x="5" y="13" width="6" height="6" rx="1.5" fill="#FFFFFF" fill-opacity="0.5"/>
+          <rect x="13" y="13" width="6" height="6" rx="1.5" fill="#93C5FD"/>
+          <defs>
+            <linearGradient id="mpro-grad-toolbar" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#3B82F6"/>
+              <stop offset="1" stop-color="#1D4ED8"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        Matrix Pro
+      </div>
+
+      <button class="toolbar-btn" id="btn-expand-all" title="Expand all row groups">
+        <span class="btn-icon">⊞</span> <span data-i18n="btn_expand_all">Expand All</span>
+      </button>
+      <button class="toolbar-btn" id="btn-collapse-all" title="Collapse all row groups">
+        <span class="btn-icon">⊟</span> <span data-i18n="btn_collapse_all">Collapse All</span>
+      </button>
+
+      <span class="toolbar-divider export-divider"></span>
+
+      <div class="toolbar-group" id="export-group">
+        <button class="toolbar-btn" id="btn-export-excel" title="Export to Excel (.xlsx)">
+          <span class="btn-icon">📥</span> <span data-i18n="btn_export_excel">Export Excel</span>
+        </button>
+        <button class="toolbar-btn" id="btn-export-csv" title="Export to CSV">
+          <span class="btn-icon">📄</span> <span data-i18n="btn_export_csv">Export CSV</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── Matrix Content Area ─── -->
+    <div class="matrix-wrapper" id="matrix-wrapper">
+      <div id="matrix-container"></div>
+    </div>
+
+    <!-- ─── Overlay (loading / welcome / error) ─── -->
+    <div id="overlay">
+      <div class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Initializing...</div>
+      </div>
+    </div>
+
+    <!-- ─── Status Bar ─── -->
+    <div class="status-bar" id="status-bar">
+      <div class="status-item">
+        <span class="status-label" data-i18n="status_worksheet">Worksheet:</span>
+        <span class="status-value" id="status-worksheet">—</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label" data-i18n="status_rows_label">Rows:</span>
+        <span class="status-value" id="status-rows">—</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label" data-i18n="status_cols_label">Columns:</span>
+        <span class="status-value" id="status-columns">—</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label" data-i18n="status_levels_label">Levels:</span>
+        <span class="status-value" id="status-levels">—</span>
+      </div>
+
+      <span class="status-spacer"></span>
+
+      <div class="status-item">
+        <span class="status-label" data-i18n="status_filter_label">Filter:</span>
+        <span class="status-value" id="status-filter">None</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label" data-i18n="status_updated_label">Updated:</span>
+        <span class="status-value" id="status-refresh">—</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       Application Scripts (order matters: dependencies first)
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <script src="js/i18n.js"></script>
+  <script src="js/pivot-engine.js"></script>
+  <script src="js/matrix-renderer.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/tableau-connector.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
