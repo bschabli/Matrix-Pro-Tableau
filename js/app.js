@@ -239,6 +239,7 @@ class MatrixApp {
         showZebra: this.config.showZebra !== false,
         showHGrid: this.config.showHGrid !== false,
         showVGrid: this.config.showVGrid !== false,
+        valueFormats: (this.config && this.config.valueFormats) || {},
         onCellClick: (cellInfo) => this._onCellClick(cellInfo),
         onExpandToggle: (path, expanded) => this._onExpandToggle(path, expanded)
       });

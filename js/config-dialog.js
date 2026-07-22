@@ -194,6 +194,99 @@ class ConfigDialog {
         }
       });
     });
+
+    // Populate dynamic value formatting cards
+    this._populateValueFormats();
+  }
+
+  /**
+   * Dynamically build formatting selectors for each active measure.
+   * @private
+   */
+  _populateValueFormats() {
+    const container = document.getElementById('value-formats-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const valueFields = this._config.valueFields || [];
+    const valueFormats = this._config.valueFormats || {};
+
+    if (valueFields.length === 0) {
+      container.innerHTML = `<div style="font-size: 11px; opacity: 0.6; padding: 4px;" data-i18n="no_active_measures">No hay medidas activas. Agrega campos a la repisa de Valores en Tableau.</div>`;
+      // Apply translation immediately
+      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'es';
+      if (typeof applyI18n === 'function') applyI18n(savedLang);
+      return;
+    }
+
+    valueFields.forEach(vf => {
+      const fieldKey = vf.field;
+      const format = valueFormats[fieldKey] || { type: 'auto', decimals: 2 };
+
+      const row = document.createElement('div');
+      row.className = 'value-format-row';
+      row.style.cssText = 'display: flex; flex-direction: column; gap: 6px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 6px; border: 1px solid rgba(128,128,128,0.15);';
+      
+      // Field Label Header
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size: 12px; font-weight: 600; color: var(--matrix-accent); margin-bottom: 2px;';
+      header.textContent = vf.label || vf.field;
+      row.appendChild(header);
+
+      // Controls row
+      const controls = document.createElement('div');
+      controls.style.cssText = 'display: flex; gap: 12px; align-items: center; justify-content: space-between;';
+
+      // Type Selector
+      const typeGroup = document.createElement('div');
+      typeGroup.style.cssText = 'display: flex; flex-direction: column; gap: 4px; flex-grow: 1;';
+      const typeLabel = document.createElement('span');
+      typeLabel.style.cssText = 'font-size: 10px; opacity: 0.7; font-weight: 600;';
+      typeLabel.setAttribute('data-i18n', 'label_format_type');
+      typeLabel.textContent = typeof t === 'function' ? t('label_format_type') : 'Tipo de Formato';
+      
+      const typeSelect = document.createElement('select');
+      typeSelect.className = 'form-select';
+      typeSelect.id = `val-fmt-type-${fieldKey}`;
+      typeSelect.style.cssText = 'min-width: 140px;';
+      typeSelect.innerHTML = `
+        <option value="auto" ${format.type === 'auto' ? 'selected' : ''} data-i18n="format_auto">${typeof t === 'function' ? t('format_auto') : 'Automático / Número'}</option>
+        <option value="currency" ${format.type === 'currency' ? 'selected' : ''} data-i18n="format_currency">${typeof t === 'function' ? t('format_currency') : 'Moneda ($)'}</option>
+        <option value="percent" ${format.type === 'percent' ? 'selected' : ''} data-i18n="format_percent">${typeof t === 'function' ? t('format_percent') : 'Porcentaje (%)'}</option>
+      `;
+
+      typeGroup.appendChild(typeLabel);
+      typeGroup.appendChild(typeSelect);
+      controls.appendChild(typeGroup);
+
+      // Decimals Input
+      const decGroup = document.createElement('div');
+      decGroup.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
+      const decLabel = document.createElement('span');
+      decLabel.style.cssText = 'font-size: 10px; opacity: 0.7; font-weight: 600;';
+      decLabel.setAttribute('data-i18n', 'label_decimals');
+      decLabel.textContent = typeof t === 'function' ? t('label_decimals') : 'Decimales';
+
+      const decInput = document.createElement('input');
+      decInput.className = 'form-input';
+      decInput.id = `val-fmt-dec-${fieldKey}`;
+      decInput.type = 'number';
+      decInput.min = '0';
+      decInput.max = '6';
+      decInput.value = (format.decimals !== undefined) ? format.decimals : 2;
+      decInput.style.cssText = 'width: 60px; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;';
+
+      decGroup.appendChild(decLabel);
+      decGroup.appendChild(decInput);
+      controls.appendChild(decGroup);
+
+      row.appendChild(controls);
+      container.appendChild(row);
+    });
+
+    // Apply translations to new dynamic elements
+    const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'es';
+    if (typeof applyI18n === 'function') applyI18n(savedLang);
   }
 
   /**
@@ -234,6 +327,19 @@ class ConfigDialog {
         }
       }
 
+      // Collect value formats from dynamic DOM elements
+      const valueFormats = {};
+      (existing.valueFields || this._config.valueFields || []).forEach(vf => {
+        const typeEl = document.getElementById(`val-fmt-type-${vf.field}`);
+        const decEl = document.getElementById(`val-fmt-dec-${vf.field}`);
+        if (typeEl && decEl) {
+          valueFormats[vf.field] = {
+            type: typeEl.value,
+            decimals: parseInt(decEl.value, 10) || 0
+          };
+        }
+      });
+
       const updated = Object.assign({}, existing, {
         theme: themeEl ? themeEl.value : 'theme-light',
         density: densityEl ? densityEl.value : 'normal',
@@ -259,7 +365,8 @@ class ConfigDialog {
         showToolbar: showtoolbarEl ? Boolean(showtoolbarEl.checked) : true,
         showExportButtons: showexportEl ? Boolean(showexportEl.checked) : true,
         showStatusBar: showstatusbarEl ? Boolean(showstatusbarEl.checked) : true,
-        language: getV('language-select') || localStorage.getItem('matrixLang') || 'es'
+        language: getV('language-select') || localStorage.getItem('matrixLang') || 'es',
+        valueFormats: valueFormats
       });
 
       const updatedJson = JSON.stringify(updated);

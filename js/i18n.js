@@ -98,7 +98,13 @@ const I18N = {
     loading_data: 'Cargando datos de Tableau...',
     no_data_found: 'No se encontraron datos. Agrega campos a las repisas Rows, Columns o Values en la tarjeta Marks de Tableau.',
     transforming_data: 'Transformando datos...',
-    default_measure_label: 'Recuento'
+    default_measure_label: 'Recuento',
+    card_value_formatting: 'Formato de Valores',
+    label_format_type: 'Tipo de Formato',
+    label_decimals: 'Decimales',
+    format_auto: 'Automático / Número',
+    format_currency: 'Moneda ($)',
+    format_percent: 'Porcentaje (%)'
   },
   en: {
     config_title: 'Visual Format — Matrix Pro',
@@ -192,7 +198,13 @@ const I18N = {
     loading_data: 'Loading Tableau data...',
     no_data_found: 'No data found. Add fields to Rows, Columns, or Values shelves on the Tableau Marks card.',
     transforming_data: 'Transforming data...',
-    default_measure_label: 'Count'
+    default_measure_label: 'Count',
+    card_value_formatting: 'Value Formatting',
+    label_format_type: 'Format Type',
+    label_decimals: 'Decimal Places',
+    format_auto: 'Automatic / Number',
+    format_currency: 'Currency ($)',
+    format_percent: 'Percentage (%)'
   },
   zh: {
     config_title: '视觉格式 — Matrix Pro',

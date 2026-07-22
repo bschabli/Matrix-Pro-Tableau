@@ -344,7 +344,7 @@ class MatrixRenderer {
     const value = valuesMap ? valuesMap[measureField] : null;
 
     if (value != null && isFinite(value)) {
-      td.textContent = this._formatNumber(value);
+      td.textContent = this._formatNumber(value, measureField);
       td.dataset.value = value;
 
       // Conditional formatting
@@ -414,7 +414,7 @@ class MatrixRenderer {
       const value = valuesMap ? valuesMap[measureField] : null;
 
       if (value != null && isFinite(value)) {
-        td.textContent = this._formatNumber(value);
+        td.textContent = this._formatNumber(value, measureField);
         td.dataset.value = value;
       } else {
         td.textContent = '–';
@@ -457,7 +457,7 @@ class MatrixRenderer {
       const value = valuesMap ? valuesMap[measureField] : null;
 
       if (value != null && isFinite(value)) {
-        td.textContent = this._formatNumber(value);
+        td.textContent = this._formatNumber(value, measureField);
       } else {
         td.textContent = '–';
         td.classList.add('value-null');
@@ -743,9 +743,30 @@ class MatrixRenderer {
    * Format a number for display.
    * @private
    */
-  _formatNumber(value) {
+  _formatNumber(value, measureField) {
     if (value == null || !isFinite(value)) return '–';
-    return this._numberFormatter.format(value);
+
+    const formats = this.options.valueFormats || {};
+    const format = formats[measureField] || { type: 'auto', decimals: 2 };
+    const dec = (format.decimals !== undefined) ? parseInt(format.decimals, 10) : 2;
+
+    if (format.type === 'percent') {
+      const val = value * 100;
+      return val.toLocaleString('en-US', {
+        minimumFractionDigits: dec,
+        maximumFractionDigits: dec
+      }) + '%';
+    } else if (format.type === 'currency') {
+      return '$' + value.toLocaleString('en-US', {
+        minimumFractionDigits: dec,
+        maximumFractionDigits: dec
+      });
+    } else {
+      return value.toLocaleString('en-US', {
+        minimumFractionDigits: dec,
+        maximumFractionDigits: dec
+      });
+    }
   }
 
   /**
