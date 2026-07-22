@@ -437,11 +437,11 @@ html, body {
   width: 22px;
   height: 22px;
   padding: 0;
-  border: 1px solid rgba(128, 128, 128, 0.3);
+  border: 1px solid var(--matrix-header-border);
   border-radius: 4px;
-  background: var(--matrix-row-bg-alt);
-  color: var(--matrix-header-text);
-  font-size: 11px;
+  background: var(--matrix-bg);
+  color: var(--matrix-accent);
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);

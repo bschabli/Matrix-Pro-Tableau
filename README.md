@@ -90,19 +90,21 @@ Builds and manages the interactive DOM table:
 
 ## 💻 Installation & Usage
 
-### Prerequisites
-* Tableau Desktop (version 2022.4 or later) or Tableau Server/Cloud.
-* A web server to host the extension files (or run locally for development).
+### 1. Production Deployment (GitHub Pages)
+The production version of this extension is already deployed and hosted publicly on GitHub Pages:
+* **Hosted URL:** `https://arley-economist-dev.github.io/Matrix-Pro-Tableau/index.html`
+* **Pre-configured Manifest:** The included [`matrix_extension.trex`](matrix_extension.trex) file is already pre-configured to load this live production URL.
 
-### 1. Host the Extension Files
-Ensure all project files are hosted on a web server (e.g., IIS, Nginx, Apache, or S3).
-For local development, you can use any local static web server (e.g. `npx http-server` or VS Code Live Server) on port `8080`.
-
-### 2. Configure the Manifest (`matrix_extension.trex`)
-Open `matrix_extension.trex` in a text editor and update the `<url>` element to point to your hosted `index.html` file:
-```xml
-<url>http://localhost:8080/index.html</url>
-```
+### 2. Local Development (Optional)
+If you wish to make changes locally and run the extension:
+1. Start any local static web server in the project directory:
+   ```bash
+   npx http-server -p 8765
+   ```
+2. Open [`matrix_extension.trex`](matrix_extension.trex) and temporarily point the `<url>` element to local server:
+   ```xml
+   <url>http://localhost:8765/index.html</url>
+   ```
 
 ### 3. Add to Tableau
 1. Open Tableau Desktop and connect to a dataset (e.g., Sample - Superstore).

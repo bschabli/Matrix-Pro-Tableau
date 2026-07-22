@@ -173,7 +173,7 @@ class MatrixRenderer {
 
         const expBtn = document.createElement('button');
         expBtn.className = 'corner-btn';
-        expBtn.title = 'Expandir todo';
+        expBtn.title = t('btn_expand_all');
         expBtn.innerHTML = '⊞';
         expBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -182,7 +182,7 @@ class MatrixRenderer {
 
         const colBtn = document.createElement('button');
         colBtn.className = 'corner-btn';
-        colBtn.title = 'Colapsar todo';
+        colBtn.title = t('btn_collapse_all');
         colBtn.innerHTML = '⊟';
         colBtn.addEventListener('click', (e) => {
           e.stopPropagation();
