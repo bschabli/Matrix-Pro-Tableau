@@ -10,11 +10,14 @@ Matrix Pro is a professional, high-performance visual extension for Tableau dash
 * **Tableau-Native Filters integration:** Cross-filters other dashboard sheets directly when clicking cells.
 * **Premium Design Themes:** Preconfigured themes: Light (Classic), Dark Mode (Midnight), and Modern Blue.
 * **Density & Typography Controls:** Compact (4px), Normal (8px), and Spacious (12px) paddings with font size customization.
-* **Conditional Formatting Engine:**
+* **Independent Conditional Formatting Engine [NEW v1.0.1]:**
+  * **Per-Field Configuration:** Enable and configure distinct format settings (gradient scale or logical rules) for each value column independently.
   * **Color Scale (Gradient):** Dynamic background gradients interpolated between custom Minimum (Low) and Maximum (High) hex colors.
   * **Logical Rules:** Multi-threshold value rules with custom background and text color presets.
+  * **Luminance Auto-Contrast:** Automatically calculates background brightness to switch text colors dynamically between white and dark grey, ensuring text is always legible.
 * **No-PBI Rebranding:** Completely independent branding, vector SVG graphics, and neutral styles.
 * **Localizations (6 Languages):** Full real-time interface translation for **English**, **Spanish**, **Chinese**, **German**, **Italian**, and **French**.
+* **Stable Event Pipeline & Deduplication [NEW v1.0.1]:** Uses data-signature and layout fingerprinting to eliminate rendering loops and prevent dashboard flickering or "Loading" indicators.
 * **Exports:** Fast local exports to Excel (`.xlsx` formatted workbook) and standard CSV files.
 
 ---
@@ -115,5 +118,17 @@ If you wish to make changes locally and run the extension:
 
 ---
 
+## ⏳ Changelog
+
+### v1.0.1 (July 23, 2026)
+* **Independent Per-Field Formatting:** Refactored formatting controls to select and configure distinct conditional formats for each measure in the matrix independently.
+* **Text Luminance Auto-Contrast:** Implemented background-brightness math to toggle cell text color dynamically between white (`#ffffff`) and dark grey (`#1f2937`) for legibility.
+* **Flicker and Loop Prevention:** Integrated a data-signature and configuration fingerprint checking loop guard to completely resolve recursive refresh loops in Tableau dashboards.
+* **Worksheet Shelf Auto-Detection:** Re-enabled sheet data listeners so structural changes on Rows/Columns/Values are rendered immediately.
+* **High-Res Branding assets:** Recreated and saved the manifest icon in high-resolution PNG using the original vector logo.
+
+---
+
 ## 📄 License
 This project is open-source and released under the MIT License. Feel free to customize and extend.
+
