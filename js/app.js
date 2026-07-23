@@ -25,6 +25,7 @@ class MatrixApp {
     this._matrixData = null;
     this._isLoading = false;
     this._lastDataSignature = null;
+    this._lastConfigStr = null;
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -180,15 +181,15 @@ class MatrixApp {
       // 1. Read field assignments directly from Tableau Marks card shelves
       const encodings = await this.connector.getVisualSpecificationEncodings();
 
-      let isConfigChanged = false;
+      let isEncodingsChanged = false;
       if (encodings) {
         // Compare with active configuration, and only save if fields changed
         const rowsChanged = JSON.stringify(this.config.rowFields) !== JSON.stringify(encodings.rowFields);
         const colsChanged = JSON.stringify(this.config.colFields) !== JSON.stringify(encodings.colFields);
         const valsChanged = JSON.stringify(this.config.valueFields) !== JSON.stringify(encodings.valueFields);
-        isConfigChanged = rowsChanged || colsChanged || valsChanged;
+        isEncodingsChanged = rowsChanged || colsChanged || valsChanged;
 
-        if (isConfigChanged) {
+        if (isEncodingsChanged) {
           this.config.rowFields = encodings.rowFields || [];
           this.config.colFields = encodings.colFields || [];
           this.config.valueFields = encodings.valueFields || [];
@@ -204,6 +205,7 @@ class MatrixApp {
         this._showConfigPrompt(msg);
         this._isLoading = false;
         this._lastDataSignature = null;
+        this._lastConfigStr = null;
         return;
       }
 
@@ -217,17 +219,22 @@ class MatrixApp {
         this._showEmpty(t('no_data_found'));
         this._isLoading = false;
         this._lastDataSignature = null;
+        this._lastConfigStr = null;
         return;
       }
 
       // Calculate data signature and verify against previous load to prevent loop
+      const configStr = JSON.stringify(this.config);
+      const isConfigChanged = configStr !== this._lastConfigStr;
       const dataSig = this._getDataSignature(rawData);
+
       if (dataSig === this._lastDataSignature && !isConfigChanged) {
         console.log('[MatrixApp] Data and configuration are identical. Skipping render.');
         this._isLoading = false;
         return;
       }
       this._lastDataSignature = dataSig;
+      this._lastConfigStr = configStr;
 
       if (isInitialLoad) this._showLoading(t('transforming_data'));
 
