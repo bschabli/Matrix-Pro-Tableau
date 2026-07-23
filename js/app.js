@@ -159,6 +159,9 @@ class MatrixApp {
     if (this._isLoading) return;
     this._isLoading = true;
 
+    // Temporarily disable event listeners to avoid recursive rendering/fetching loops
+    this.connector.removeAllListeners();
+
     const isInitialLoad = !this.renderer || !document.getElementById('matrix-container').innerHTML;
 
     try {
@@ -177,11 +180,17 @@ class MatrixApp {
       const encodings = await this.connector.getVisualSpecificationEncodings();
 
       if (encodings) {
-        // ALWAYS update saved config with live shelf state (clears removed metrics/dimensions)
-        this.config.rowFields = encodings.rowFields || [];
-        this.config.colFields = encodings.colFields || [];
-        this.config.valueFields = encodings.valueFields || [];
-        this.connector.saveConfig(this.config);
+        // Compare with active configuration, and only save if fields changed
+        const rowsChanged = JSON.stringify(this.config.rowFields) !== JSON.stringify(encodings.rowFields);
+        const colsChanged = JSON.stringify(this.config.colFields) !== JSON.stringify(encodings.colFields);
+        const valsChanged = JSON.stringify(this.config.valueFields) !== JSON.stringify(encodings.valueFields);
+
+        if (rowsChanged || colsChanged || valsChanged) {
+          this.config.rowFields = encodings.rowFields || [];
+          this.config.colFields = encodings.colFields || [];
+          this.config.valueFields = encodings.valueFields || [];
+          this.connector.saveConfig(this.config);
+        }
       }
 
       // Check if required fields exist (must have at least Rows)
@@ -260,6 +269,13 @@ class MatrixApp {
       this._showError(err);
     } finally {
       this._isLoading = false;
+      // Re-register data change listeners after refreshing has finished
+      if (this.config && this.config.worksheetName) {
+        this.connector.registerDataChangeListener(
+          this.config.worksheetName,
+          () => this._onDataChanged()
+        );
+      }
     }
   }
 
