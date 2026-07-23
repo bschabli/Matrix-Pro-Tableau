@@ -24,6 +24,7 @@ class MatrixApp {
     this.config = null;
     this._matrixData = null;
     this._isLoading = false;
+    this._lastDataSignature = null;
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -179,13 +180,15 @@ class MatrixApp {
       // 1. Read field assignments directly from Tableau Marks card shelves
       const encodings = await this.connector.getVisualSpecificationEncodings();
 
+      let isConfigChanged = false;
       if (encodings) {
         // Compare with active configuration, and only save if fields changed
         const rowsChanged = JSON.stringify(this.config.rowFields) !== JSON.stringify(encodings.rowFields);
         const colsChanged = JSON.stringify(this.config.colFields) !== JSON.stringify(encodings.colFields);
         const valsChanged = JSON.stringify(this.config.valueFields) !== JSON.stringify(encodings.valueFields);
+        isConfigChanged = rowsChanged || colsChanged || valsChanged;
 
-        if (rowsChanged || colsChanged || valsChanged) {
+        if (isConfigChanged) {
           this.config.rowFields = encodings.rowFields || [];
           this.config.colFields = encodings.colFields || [];
           this.config.valueFields = encodings.valueFields || [];
@@ -200,6 +203,7 @@ class MatrixApp {
         const msg = t('config_prompt_default');
         this._showConfigPrompt(msg);
         this._isLoading = false;
+        this._lastDataSignature = null;
         return;
       }
 
@@ -212,8 +216,18 @@ class MatrixApp {
       if (rawData.length === 0) {
         this._showEmpty(t('no_data_found'));
         this._isLoading = false;
+        this._lastDataSignature = null;
         return;
       }
+
+      // Calculate data signature and verify against previous load to prevent loop
+      const dataSig = this._getDataSignature(rawData);
+      if (dataSig === this._lastDataSignature && !isConfigChanged) {
+        console.log('[MatrixApp] Data and configuration are identical. Skipping render.');
+        this._isLoading = false;
+        return;
+      }
+      this._lastDataSignature = dataSig;
 
       if (isInitialLoad) this._showLoading(t('transforming_data'));
 
@@ -277,6 +291,24 @@ class MatrixApp {
         );
       }
     }
+  }
+
+  /**
+   * Generates a unique signature for the worksheet data to detect real updates.
+   * @private
+   */
+  _getDataSignature(data) {
+    if (!data || data.length === 0) return 'empty';
+    const len = data.length;
+    const firstObj = data[0];
+    const lastObj = data[len - 1];
+    const midObj = data[Math.floor(len / 2)];
+    
+    const firstStr = JSON.stringify(firstObj);
+    const midStr = JSON.stringify(midObj);
+    const lastStr = JSON.stringify(lastObj);
+    
+    return `${len}_${firstStr}_${midStr}_${lastStr}`;
   }
 
   // ──────────────────────────────────────────────────────────────────────────

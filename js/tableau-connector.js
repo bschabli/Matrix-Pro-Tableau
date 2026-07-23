@@ -438,6 +438,9 @@ class TableauConnector {
       tableau.TableauEventType.FilterChanged,
       tableau.TableauEventType.MarkSelectionChanged
     ];
+    if (tableau.TableauEventType.SummaryDataChanged) {
+      eventTypes.push(tableau.TableauEventType.SummaryDataChanged);
+    }
 
     eventTypes.forEach(eventType => {
       try {
