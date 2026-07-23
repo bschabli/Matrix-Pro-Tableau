@@ -35,7 +35,7 @@ class MatrixRenderer {
       indentSize: 18,           // px per level of indent
       showSubtotals: true,       // show subtotal rows after each group
       showGrandTotal: true,      // show grand total row in tfoot
-      conditionalFormatting: false, // disable color-scale formatting by default
+      cfConfigs: {},             // per-field conditional formatting configurations
       numberFormat: {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2
@@ -348,8 +348,9 @@ class MatrixRenderer {
       td.dataset.value = value;
 
       // Conditional formatting
-      if (this.options.conditionalFormatting && data.valueRanges) {
-        this._applyConditionalFormat(td, value, measureField, data.valueRanges);
+      const cfConfig = (this.options.cfConfigs && this.options.cfConfigs[measureField]);
+      if (cfConfig && cfConfig.enabled && data.valueRanges) {
+        this._applyConditionalFormat(td, value, measureField, data.valueRanges, cfConfig);
       }
     } else {
       td.textContent = '–';
@@ -653,28 +654,28 @@ class MatrixRenderer {
    * Apply conditional formatting (Gradient scale or Logical value rules).
    * @private
    */
-  _applyConditionalFormat(td, value, measureField, valueRanges) {
-    if (!this.options.conditionalFormatting || typeof value !== 'number' || isNaN(value)) return;
+  _applyConditionalFormat(td, value, measureField, valueRanges, cfConfig) {
+    if (typeof value !== 'number' || isNaN(value)) return;
 
-    const cfMode = this.options.cfMode || 'gradient';
+    const cfMode = cfConfig.mode || 'gradient';
 
     if (cfMode === 'rules') {
       // ⚙️ Logical Rules Mode
-      const val1 = typeof this.options.ruleVal1 === 'number' ? this.options.ruleVal1 : 50000;
-      const val2 = typeof this.options.ruleVal2 === 'number' ? this.options.ruleVal2 : 200000;
+      const val1 = typeof cfConfig.ruleVal1 === 'number' ? cfConfig.ruleVal1 : 50000;
+      const val2 = typeof cfConfig.ruleVal2 === 'number' ? cfConfig.ruleVal2 : 200000;
 
       let bg = '#ffffff';
       let text = 'inherit';
 
       if (value < val1) {
-        bg = this.options.ruleBg1 || '#fee2e2';
-        text = this.options.ruleText1 || '#991b1b';
+        bg = cfConfig.ruleBg1 || '#fee2e2';
+        text = cfConfig.ruleText1 || '#991b1b';
       } else if (value >= val1 && value < val2) {
-        bg = this.options.ruleBg2 || '#fef3c7';
-        text = this.options.ruleText2 || '#92400e';
+        bg = cfConfig.ruleBg2 || '#fef3c7';
+        text = cfConfig.ruleText2 || '#92400e';
       } else {
-        bg = this.options.ruleBg3 || '#dcfce7';
-        text = this.options.ruleText3 || '#166534';
+        bg = cfConfig.ruleBg3 || '#dcfce7';
+        text = cfConfig.ruleText3 || '#166534';
       }
 
       td.style.backgroundColor = bg;
@@ -688,14 +689,19 @@ class MatrixRenderer {
     if (!range || range.max === range.min) return;
 
     const ratio = Math.max(0, Math.min(1, (value - range.min) / (range.max - range.min)));
-    const minRgb = this._hexToRgb(this.options.cfMinColor || '#fee2e2');
-    const maxRgb = this._hexToRgb(this.options.cfMaxColor || '#dcfce7');
+    const minRgb = this._hexToRgb(cfConfig.minColor || '#fee2e2');
+    const maxRgb = this._hexToRgb(cfConfig.maxColor || '#dcfce7');
 
     const r = Math.round(minRgb.r + (maxRgb.r - minRgb.r) * ratio);
     const g = Math.round(minRgb.g + (maxRgb.g - minRgb.g) * ratio);
     const b = Math.round(minRgb.b + (maxRgb.b - minRgb.b) * ratio);
 
     td.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+    
+    // Auto-contrast text color based on luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    td.style.color = luminance > 0.5 ? '#1f2937' : '#ffffff';
+
     td.classList.add('cf-cell');
   }
 
