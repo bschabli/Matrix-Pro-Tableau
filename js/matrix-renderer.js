@@ -37,6 +37,8 @@ class MatrixRenderer {
       showSubtotals: true,       // show subtotal rows after each group
       showGrandTotal: true,      // show grand total row in tfoot
       cfConfigs: {},             // per-field conditional formatting configurations
+      columnWidths: {},
+      onColumnWidthChange: null,
       numberFormat: {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2
@@ -61,10 +63,14 @@ class MatrixRenderer {
    * @param {MatrixData} matrixData - Output from PivotEngine.process()
    */
   render(matrixData) {
-    this._matrixData = matrixData;
+      if (
+        !this._matrixData ||
+        this._matrixData.rowTree !== matrixData.rowTree
+      ) {
+        this._initExpandedState(matrixData.rowTree, '');
+      }
 
-    // Initialize expanded state from the tree data
-    this._initExpandedState(matrixData.rowTree, '');
+this._matrixData = matrixData;
 
     // Clear container
     this.container.innerHTML = '';
@@ -76,7 +82,7 @@ class MatrixRenderer {
 
     // Build the table
     const table = document.createElement('table');
-    table.className = 'matrix-table';
+    table.className = 'matrix-table user-columns';
     table.setAttribute('role', 'treegrid');
 
     if (this.options.density) {
@@ -94,6 +100,22 @@ class MatrixRenderer {
     if (this.options.showVGrid === false) {
       table.classList.add('no-vgrid');
     }
+
+    const colgroup = document.createElement('colgroup');
+
+    const keys = [
+      '__row__',
+      ...matrixData.flatColumns.map(c => c.key)
+    ];
+
+    keys.forEach(key => {
+      const col = document.createElement('col');
+      col.dataset.columnKey = key;
+      colgroup.appendChild(col);
+    });
+
+    table.appendChild(colgroup);
+    this._applyColumnWidths(table);
 
     // 1. Header
     table.appendChild(this._buildThead(matrixData));
@@ -195,10 +217,13 @@ class MatrixRenderer {
         container.appendChild(btnGroup);
 
         spacerTh.appendChild(container);
+        this._attachResizeHandle(spacerTh, '__row__');
         tr.appendChild(spacerTh);
       }
 
       // Add column header cells
+      let measureIndex = 0;
+
       row.forEach(cell => {
         const th = document.createElement('th');
         th.textContent = cell.label;
@@ -210,6 +235,17 @@ class MatrixRenderer {
         if (cell.isTotal) classes.push('col-total-header');
         if (cell.isMeasure) classes.push('col-value');
         th.className = classes.join(' ');
+        th.title = cell.label;
+
+        if (
+          rowIndex === numHeaderRows - 1 &&
+          data.flatColumns[measureIndex]
+        ) {
+          this._attachResizeHandle(
+            th,
+            data.flatColumns[measureIndex++].key
+          );
+        }
 
         tr.appendChild(th);
       });
@@ -856,6 +892,94 @@ class MatrixRenderer {
       </div>
     `;
   }
+
+  _applyColumnWidths(table) {
+  if (!table) return;
+
+  let totalWidth = 0;
+
+  table.querySelectorAll('colgroup col').forEach(col => {
+    const key = col.dataset.columnKey;
+    const saved = Number(this.options.columnWidths?.[key]);
+    const min = key === '__row__' ? 180 : 70;
+    const fallback = key === '__row__' ? 240 : 140;
+
+    const width = Number.isFinite(saved) && saved >= min
+      ? Math.min(700, Math.round(saved))
+      : fallback;
+
+    col.style.width = `${width}px`;
+    totalWidth += width;
+  });
+
+  table.style.width = `${totalWidth}px`;
+}
+
+_setColumnWidth(key, width) {
+  const min = key === '__row__' ? 180 : 70;
+  const next = Math.max(min, Math.min(700, Math.round(width)));
+
+  this.options.columnWidths = {
+    ...this.options.columnWidths,
+    [key]: next
+  };
+
+  this._applyColumnWidths(
+    this.container.querySelector('.matrix-table')
+  );
+}
+
+_attachResizeHandle(th, key) {
+  const handle = document.createElement('span');
+  handle.className = 'column-resize-handle';
+
+  handle.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const col = Array.from(
+      this.container.querySelectorAll('colgroup col')
+    ).find(c => c.dataset.columnKey === key);
+
+    if (!col) return;
+
+    const startX = event.clientX;
+    const startWidth = parseFloat(col.style.width);
+
+    handle.setPointerCapture(event.pointerId);
+
+    const onMove = e => {
+      this._setColumnWidth(
+        key,
+        startWidth + e.clientX - startX
+      );
+    };
+
+    const onEnd = () => {
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', onEnd);
+      handle.removeEventListener('pointercancel', onEnd);
+
+      const width = this.options.columnWidths[key];
+
+      if (
+        width !== undefined &&
+        width !== startWidth &&
+        this.options.onColumnWidthChange
+      ) {
+        this.options.onColumnWidthChange(key, width);
+      }
+    };
+
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', onEnd);
+    handle.addEventListener('pointercancel', onEnd);
+  });
+
+  th.appendChild(handle);
+}
 }
 
 // Expose globally
