@@ -256,7 +256,7 @@ class TableauConnector {
       try {
         reader = await ws.getSummaryDataReaderAsync(
           undefined,
-          { ignoreSelection: true }
+          { ignoreSelection: this._isVizExtension }
         );
 
         const records = [];
