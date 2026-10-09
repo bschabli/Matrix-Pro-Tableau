@@ -104,7 +104,8 @@ const I18N = {
     label_decimals: 'Decimales',
     format_auto: 'Automático / Número',
     format_currency: 'Moneda ($)',
-    format_percent: 'Porcentaje (%)'
+    format_percent: 'Porcentaje (%)',
+    value_label_placeholder: 'Nombre de columna (opcional)'
   },
   en: {
     config_title: 'Visual Format — Matrix Pro',
@@ -204,7 +205,8 @@ const I18N = {
     label_decimals: 'Decimal Places',
     format_auto: 'Automatic / Number',
     format_currency: 'Currency ($)',
-    format_percent: 'Percentage (%)'
+    format_percent: 'Percentage (%)',
+    value_label_placeholder: 'Column name (optional)'
   },
   zh: {
     config_title: '视觉格式 — Matrix Pro',
@@ -656,7 +658,8 @@ const I18N = {
     loading: '加载中...',
     status_rows: '行',
     status_cols: '列',
-    status_sheet: '工作表'
+    status_sheet: '工作表',
+    value_label_placeholder: '列名（可选）'
   },
   de: {
     config_title: 'Visuelles Format — Matrix Pro',
@@ -736,7 +739,8 @@ const I18N = {
     loading: 'Wird geladen...',
     status_rows: 'Zeilen',
     status_cols: 'Spalten',
-    status_sheet: 'Blatt'
+    status_sheet: 'Blatt',
+    value_label_placeholder: 'Spaltenname (optional)'
   },
   it: {
     config_title: 'Formato Visivo — Matrix Pro',
@@ -816,7 +820,8 @@ const I18N = {
     loading: 'Caricamento...',
     status_rows: 'righe',
     status_cols: 'colonne',
-    status_sheet: 'Foglio'
+    status_sheet: 'Foglio',
+    value_label_placeholder: 'Nome colonna (opzionale)'
   },
   fr: {
     config_title: 'Format Visuel — Matrix Pro',
@@ -896,7 +901,8 @@ const I18N = {
     loading: 'Chargement...',
     status_rows: 'lignes',
     status_cols: 'colonnes',
-    status_sheet: 'Feuille'
+    status_sheet: 'Feuille',
+    value_label_placeholder: 'Nom de colonne (facultatif)'
   }
 };
 
@@ -924,6 +930,10 @@ function applyI18n(lang) {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     el.textContent = t(key, lang);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    el.setAttribute('placeholder', t(key, lang));
   });
   document.querySelectorAll('[data-i18n-html]').forEach(el => {
     const key = el.getAttribute('data-i18n-html');
