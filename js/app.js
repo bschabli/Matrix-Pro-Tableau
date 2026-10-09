@@ -264,8 +264,12 @@ class MatrixApp {
         showHGrid: this.config.showHGrid !== false,
         showVGrid: this.config.showVGrid !== false,
         valueFormats: (this.config && this.config.valueFormats) || {},
+
         onCellClick: (cellInfo) => this._onCellClick(cellInfo),
-        onExpandToggle: (path, expanded) => this._onExpandToggle(path, expanded)
+        onCellHover: (tupleId, event) =>
+          this.connector.hoverTuple(tupleId, event),
+        onExpandToggle: (path, expanded) =>
+          this._onExpandToggle(path, expanded)
       });
 
       this.renderer.render(this._matrixData);

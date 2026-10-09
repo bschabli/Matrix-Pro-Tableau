@@ -33,6 +33,7 @@ class MatrixRenderer {
     this.container = container;
     this.options = {
       indentSize: 18,           // px per level of indent
+      onCellHover: null,
       showSubtotals: true,       // show subtotal rows after each group
       showGrandTotal: true,      // show grand total row in tfoot
       cfConfigs: {},             // per-field conditional formatting configurations
@@ -366,6 +367,24 @@ class MatrixRenderer {
     td.addEventListener('click', () => {
       this._handleCellClick(node, col, value, path);
     });
+
+    // Nativer Tableau-Tooltip für eindeutig zuordenbare Blattzellen
+    const tupleId = node.children?.length
+      ? null
+      : node.tooltipTupleIds?.[col.valueKey];
+
+    if (Number.isInteger(tupleId)) {
+      td.addEventListener('mouseenter', event => {
+        if (this.options.onCellHover) {
+          this.options.onCellHover(tupleId, event);
+        }
+      });
+      td.addEventListener('mouseleave', event => {
+        if (this.options.onCellHover) {
+          this.options.onCellHover(0, event);
+        }
+      });
+    }
 
     return td;
   }

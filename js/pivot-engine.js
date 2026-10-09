@@ -297,23 +297,67 @@ class PivotEngine {
    * @private
    */
   _buildRowTree(records, level, colCombinations) {
-    if (level >= this.rowFields.length) {
-      return [];
+      if (level >= this.rowFields.length) {
+        return [];
+      }
+
+      const field = this.rowFields[level];
+      const groups = this._groupBy(records, field);
+
+      return Array.from(groups.entries()).map(([label, groupRecords]) => ({
+        label,
+        field,
+        level,
+        expanded: level === 0,
+        children: this._buildRowTree(
+          groupRecords,
+          level + 1,
+          colCombinations
+        ),
+        values: this._computeValues(groupRecords, colCombinations),
+        recordCount: groupRecords.length,
+        tooltipTupleIds: this._getTooltipTupleIds(groupRecords)
+      }));
     }
 
-    const field = this.rowFields[level];
-    const groups = this._groupBy(records, field);
+  _getTooltipTupleIds(records) {
+      const index = new Map();
 
-    return Array.from(groups.entries()).map(([label, groupRecords]) => ({
-      label,
-      field,
-      level,
-      expanded: level === 0, // top level starts expanded
-      children: this._buildRowTree(groupRecords, level + 1, colCombinations),
-      values: this._computeValues(groupRecords, colCombinations),
-      recordCount: groupRecords.length
-    }));
-  }
+      for (const record of records) {
+        const key = this.colFields.length
+          ? this.colFields.map(field => {
+              const value = record[field];
+              return value != null ? String(value) : '(Blank)';
+            }).join('|')
+          : 'ALL';
+
+        const entry = index.get(key);
+
+        if (entry) {
+          entry.count++;
+        } else {
+          index.set(key, {
+            tupleId: record.__tupleId,
+            count: 1
+          });
+        }
+      }
+
+      const result = {};
+
+      for (const [key, entry] of index) {
+        if (entry.count === 1 && Number.isInteger(entry.tupleId)) {
+          result[key] = entry.tupleId;
+        }
+      }
+
+      if (records.length === 1 &&
+          Number.isInteger(records[0].__tupleId)) {
+        result.TOTAL = records[0].__tupleId;
+      }
+
+      return result;
+    }
 
   // ──────────────────────────────────────────────────────────────────────────
   // Aggregation

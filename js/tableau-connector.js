@@ -246,29 +246,70 @@ class TableauConnector {
    * @returns {Promise<Object[]>}
    */
   async fetchData(worksheetName, options = {}) {
-    const ws = this.getWorksheet(worksheetName);
-    if (!ws) throw new Error(`Worksheet "${worksheetName}" not found.`);
-
-    try {
-      const fetchOptions = {};
-      if (options.maxRows) {
-        fetchOptions.maxRows = options.maxRows;
+      const ws = this.getWorksheet(worksheetName);
+      if (!ws) {
+        throw new Error(`Worksheet "${worksheetName}" not found.`);
       }
 
-      const dataTable = await ws.getSummaryDataAsync(fetchOptions);
-      return this._dataTableToObjects(dataTable);
-    } catch (err) {
-      console.error(`[TableauConnector] Failed to fetch data from "${worksheetName}":`, err);
-      throw err;
+      let reader = null;
+
+      try {
+        reader = await ws.getSummaryDataReaderAsync(
+          undefined,
+          { ignoreSelection: this._isVizExtension }
+        );
+
+        const records = [];
+
+        for (let pageIndex = 0; pageIndex < reader.pageCount; pageIndex++) {
+          const page = await reader.getPageAsync(pageIndex);
+
+          records.push(
+            ...this._dataTableToObjects(page, records.length)
+          );
+
+          if (options.maxRows && records.length >= options.maxRows) {
+            return records.slice(0, options.maxRows);
+          }
+        }
+
+        return records;
+
+      } catch (err) {
+        console.error('[TableauConnector] Data fetch error:', err);
+        throw err;
+      } finally {
+        if (reader) {
+          await reader.releaseAsync();
+        }
+      }
     }
-  }
+  
+  async hoverTuple(tupleId, event) {
+      if (!this._isVizExtension ||
+          !this._worksheet?.hoverTupleAsync ||
+          !Number.isInteger(tupleId)) {
+        return;
+      }
+
+      try {
+        await this._worksheet.hoverTupleAsync(tupleId, {
+          tooltipAnchorPoint: {
+            x: event.pageX,
+            y: event.pageY
+          }
+        });
+      } catch (err) {
+        console.warn('[TableauConnector] Tooltip error:', err);
+      }
+    }
 
   /**
    * Convert a Tableau DataTable into an array of plain JS objects.
    * Uses `formattedValue` for dimensions and `value` for numeric measures.
    * @private
    */
-  _dataTableToObjects(dataTable) {
+  _dataTableToObjects(dataTable, offset = 0) {
     const columns = dataTable.columns;
     const rows = dataTable.data;
     const result = [];
@@ -290,6 +331,7 @@ class TableauConnector {
         }
       }
 
+      obj.__tupleId = offset + r + 1;
       result.push(obj);
     }
 
