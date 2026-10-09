@@ -264,6 +264,18 @@ class MatrixApp {
         showHGrid: this.config.showHGrid !== false,
         showVGrid: this.config.showVGrid !== false,
         valueFormats: (this.config && this.config.valueFormats) || {},
+        columnWidths: this.config.columnWidths || {},
+
+        onColumnWidthChange: (key, width) => {
+          this.config.columnWidths = {
+            ...(this.config.columnWidths || {}),
+            [key]: width
+          };
+
+          this.connector.saveConfig(this.config)
+            .catch(console.warn);
+        },
+
 
         onCellClick: (cellInfo) => this._onCellClick(cellInfo),
         onCellHover: (tupleId, event) =>
@@ -272,7 +284,7 @@ class MatrixApp {
           this._onExpandToggle(path, expanded)
       });
 
-      this.renderer.render(this._matrixData);
+      this._renderVisibleMatrix();
 
       // 4. Update status bar
       this._updateStatusBar();
@@ -395,6 +407,83 @@ class MatrixApp {
   // Toolbar
   // ──────────────────────────────────────────────────────────────────────────
 
+  _getVisibleMatrixData() {
+      if (!this._matrixData) return null;
+
+      const hidden = new Set(this.config.hiddenColumns || []);
+
+      const flatColumns = this._matrixData.flatColumns.filter(
+        col => !hidden.has(col.key)
+      );
+
+      return {
+        ...this._matrixData,
+        flatColumns,
+        headerRows: this.engine._buildHeaderRows(flatColumns)
+      };
+    }
+
+    _renderVisibleMatrix() {
+      if (!this.renderer || !this._matrixData) return;
+
+      this.renderer.render(this._getVisibleMatrixData());
+      this._renderColumnPicker();
+    }
+
+    _renderColumnPicker() {
+      const panel = document.getElementById('columns-menu-list');
+      if (!panel || !this._matrixData) return;
+
+      panel.replaceChildren();
+
+      const hidden = new Set(this.config.hiddenColumns || []);
+      const columns = this._matrixData.flatColumns;
+
+      const visibleCount = columns.filter(
+        col => !hidden.has(col.key)
+      ).length;
+
+      columns.forEach(col => {
+        const label = document.createElement('label');
+        label.className = 'columns-menu-item';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = !hidden.has(col.key);
+
+        // Keep at least one column visible.
+        checkbox.disabled = checkbox.checked && visibleCount === 1;
+
+        const name = col.colCombo?.length
+          ? `${col.colCombo.join(' / ')} / ${col.label}`
+          : col.isTotal
+            ? `Total / ${col.label}`
+            : col.label;
+
+        label.append(checkbox, document.createTextNode(name));
+
+        checkbox.addEventListener('change', () => {
+          const next = new Set(this.config.hiddenColumns || []);
+
+          if (checkbox.checked) {
+            next.delete(col.key);
+          } else {
+            next.add(col.key);
+          }
+
+          this.config.hiddenColumns = Array.from(next);
+
+          this._renderVisibleMatrix();
+          this._updateStatusBar();
+
+          this.connector.saveConfig(this.config)
+            .catch(console.warn);
+        });
+
+        panel.appendChild(label);
+      });
+    }
+
   /**
    * Bind toolbar button event listeners.
    * @private
@@ -421,7 +510,10 @@ class MatrixApp {
     if (excelBtn) {
       excelBtn.addEventListener('click', () => {
         if (this._matrixData) {
-          this.exporter.exportToExcel(this._matrixData, 'Matrix_Pro_Export');
+          this.exporter.exportToExcel(
+            this._getVisibleMatrixData(),
+            'Matrix_Pro_Export'
+          );
         }
       });
     }
@@ -431,7 +523,10 @@ class MatrixApp {
     if (csvBtn) {
       csvBtn.addEventListener('click', () => {
         if (this._matrixData) {
-          this.exporter.exportToCSV(this._matrixData, 'Matrix_Pro_Export');
+          this.exporter.exportToCSV(
+            this._getVisibleMatrixData(),
+            'Matrix_Pro_Export'
+          );
         }
       });
     }

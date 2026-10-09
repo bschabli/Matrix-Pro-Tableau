@@ -1166,3 +1166,82 @@ body.no-export .export-divider,
     background: #ddd !important;
   }
 }
+
+/* User-adjustable column widths */
+.matrix-table.user-columns {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.matrix-table.user-columns th,
+.matrix-table.user-columns td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matrix-table.user-columns th.row-header-spacer,
+.matrix-table.user-columns td.row-header {
+  min-width: 0;
+}
+
+/* Drag handle */
+.column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.column-resize-handle:hover,
+.column-resize-handle:active {
+  background: var(--matrix-accent);
+  opacity: 0.5;
+}
+
+/* Column visibility menu */
+.columns-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.columns-menu summary {
+  list-style: none;
+}
+
+.columns-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.columns-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 200;
+  width: 270px;
+  max-height: 350px;
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--matrix-bg);
+  color: var(--matrix-text);
+  border: 1px solid var(--matrix-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.columns-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.columns-menu-item:hover {
+  background: var(--matrix-row-hover);
+}

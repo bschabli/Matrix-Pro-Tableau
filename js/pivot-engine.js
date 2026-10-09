@@ -225,7 +225,6 @@ class PivotEngine {
 
     const numColLevels = this.colFields.length;
     const headerRows = [];
-    const numMeasures = this.valueFields.length;
 
     // For each column-field level, scan flatColumns and group spans
     for (let level = 0; level < numColLevels; level++) {
@@ -240,7 +239,7 @@ class PivotEngine {
           if (level === 0) {
             row.push({
               label: 'Total',
-              colspan: numMeasures,
+              colspan: flatColumns.filter(c => c.isTotal).length,
               rowspan: numColLevels,
               isTotal: true,
               isMeasure: false
