@@ -379,6 +379,11 @@ class MatrixRenderer {
           this.options.onCellHover(tupleId, event);
         }
       });
+      td.addEventListener('mouseleave', event => {
+        if (this.options.onCellHover) {
+          this.options.onCellHover(0, event);
+        }
+      });
     }
 
     return td;
