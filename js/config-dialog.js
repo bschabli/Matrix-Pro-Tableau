@@ -269,7 +269,7 @@ class ConfigDialog {
       nameInput.className = 'form-input';
       nameInput.id = `val-fmt-label-${fieldKey}`;
       nameInput.type = 'text';
-      nameInput.placeholder = 'Spaltenname (optional)';
+      nameInput.setAttribute('data-i18n-placeholder', 'value_label_placeholder');
       nameInput.value = format.label || '';
       nameInput.style.cssText = 'width: 100%; box-sizing: border-box;';
       row.appendChild(nameInput);
