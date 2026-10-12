@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="de">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -505,6 +505,17 @@
         <span class="accordion-chevron">▲</span>
       </div>
       <div class="accordion-content">
+        <div class="form-row">
+          <div class="form-label-group">
+            <span class="form-label">Zahlenformat</span>
+            <span class="form-desc">Tausender- und Dezimaltrennzeichen</span>
+          </div>
+
+          <select id="number-locale-select" class="form-select">
+            <option value="de-DE">Deutsch (1.234,56)</option>
+            <option value="en-US">English (1,234.56)</option>
+          </select>
+        </div>
         <div id="value-formats-container" style="display: flex; flex-direction: column; gap: 12px;">
           <!-- Dynamically populated measures will be generated here -->
         </div>

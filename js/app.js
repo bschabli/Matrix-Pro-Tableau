@@ -59,7 +59,7 @@ class MatrixApp {
       const currentTheme = (this.config && this.config.theme) ? this.config.theme : 'theme-light';
       document.body.className = currentTheme;
 
-      const currentLang = (this.config && this.config.language) ? this.config.language : (localStorage.getItem('matrixLang') || 'es');
+      const currentLang = (this.config && this.config.language) ? this.config.language : (localStorage.getItem('matrixLang') || 'de');
       if (typeof applyI18n === 'function') applyI18n(currentLang);
 
       if (this.config && this.config.worksheetName) {
