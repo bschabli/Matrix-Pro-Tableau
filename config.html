@@ -658,6 +658,89 @@
       </div>
     </div>
 
+    <!-- Drill-through Settings -->
+    <div class="accordion-item">
+      <div class="accordion-header">
+        <div class="accordion-title">
+          <div class="accordion-icon">↗</div>
+          <span>Drill-through</span>
+        </div>
+        <span class="accordion-chevron">▲</span>
+      </div>
+
+      <div class="accordion-content">
+
+        <!-- Show / hide drill-through icon -->
+        <div class="form-row">
+          <div class="form-label-group">
+            <span class="form-label">
+              Drill-through-Button anzeigen
+            </span>
+            <span class="form-desc">
+              Zeigt das Navigationssymbol in den Wertzellen an.
+            </span>
+          </div>
+
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input
+                type="checkbox"
+                id="toggle-showdrill"
+                checked
+              />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <p class="form-desc" style="margin: 12px 0;">
+          Optional: Tableau-Parameter für die Übergabe
+          des Zellkontexts festlegen.
+          Leere Felder werden ignoriert.
+          Die Navigation funktioniert auch ohne Parameter.
+        </p>
+
+        <!-- Row hierarchy path -->
+        <div class="form-row">
+          <div class="form-label-group">
+            <span class="form-label">
+              Zeile – Hierarchiepfad
+            </span>
+            <span class="form-desc">
+              Alle Hierarchieebenen bis zur ausgewählten Zeile.
+            </span>
+          </div>
+
+          <input
+            id="drill-param-rowPath"
+            class="form-select"
+            type="text"
+            placeholder="Tableau-Parameter (optional)"
+          />
+        </div>
+
+        <!-- Column name -->
+        <div class="form-row">
+          <div class="form-label-group">
+            <span class="form-label">
+              Spalte
+            </span>
+            <span class="form-desc">
+              Vollständige Bezeichnung der angeklickten Spalte.
+            </span>
+          </div>
+
+          <input
+            id="drill-param-columnName"
+            class="form-select"
+            type="text"
+            placeholder="Tableau-Parameter (optional)"
+          />
+        </div>
+
+      </div>
+    </div>
+
     <!-- Card 7: Idioma de la Extensión -->
     <div class="accordion-item">
       <div class="accordion-header">

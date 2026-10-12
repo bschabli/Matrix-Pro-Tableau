@@ -338,31 +338,72 @@ class TableauConnector {
     return result;
   }
 
-  async setDrillThroughParameters(context) {
+  async setDrillThroughParameters(context, mappings = {}) {
+      const sources = {
+        rowPath: (context.rowPath || []).join(' | '),
+        columnName: context.columnName || ''
+      };
+
+      // Only use explicitly configured parameter mappings.
+      const assignments = Object.entries(mappings)
+        .filter(([source, parameterName]) =>
+          Object.prototype.hasOwnProperty.call(sources, source) &&
+          typeof parameterName === 'string' &&
+          parameterName.trim().length > 0
+        )
+        .map(([source, parameterName]) => ({
+          name: parameterName.trim(),
+          value: String(sources[source])
+        }));
+
+      // No mapping configured: navigation works without parameters.
+      if (assignments.length === 0) {
+        return;
+      }
+
+      if (!this._worksheet?.getParametersAsync) {
+        throw new Error(
+          'Tableau-Parameter-API nicht verfügbar.'
+        );
+      }
+
+      // Prevent conflicting assignments to the same parameter.
+      const names = assignments.map(item => item.name);
+
+      if (new Set(names).size !== names.length) {
+        throw new Error(
+          'Ein Tableau-Parameter darf nur einer Information zugeordnet werden.'
+        );
+      }
+
       const parameters = await this._worksheet.getParametersAsync();
 
       const parameterMap = new Map(
-        parameters.map(parameter => [parameter.name, parameter])
+        parameters.map(parameter => [
+          parameter.name,
+          parameter
+        ])
       );
 
-      const values = {
-        'p.guv_detail_zeile': context.rowName,
-        'p.guv_detail_zeile_pfad': context.rowPath.join(' / '),
-        'p.guv_detail_spalte': context.columnName,
-        'p.guv_detail_spalte_id': context.columnId
-      };
-
-      for (const name of Object.keys(values)) {
-        if (!parameterMap.has(name)) {
-          throw new Error(`Tableau-Parameter fehlt: ${name}`);
+      // Validate all configured parameters before changing any values.
+      for (const assignment of assignments) {
+        if (!parameterMap.has(assignment.name)) {
+          throw new Error(
+            `Konfigurierter Tableau-Parameter nicht gefunden: ${assignment.name}`
+          );
         }
       }
 
-      for (const [name, value] of Object.entries(values)) {
-        const parameter = parameterMap.get(name);
+      // Update only values that have actually changed.
+      for (const assignment of assignments) {
+        const parameter = parameterMap.get(assignment.name);
 
-        if (String(parameter.currentValue?.value) !== String(value)) {
-          await parameter.changeValueAsync(String(value));
+        if (
+          String(parameter.currentValue?.value) !== assignment.value
+        ) {
+          await parameter.changeValueAsync(
+            assignment.value
+          );
         }
       }
     }

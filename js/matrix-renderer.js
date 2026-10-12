@@ -38,6 +38,7 @@ class MatrixRenderer {
       showGrandTotal: true,      // show grand total row in tfoot
       cfConfigs: {},             // per-field conditional formatting configurations
       columnWidths: {},
+      showDrillThrough: true,
       onColumnWidthChange: null,
       numberFormat: {
         minimumFractionDigits: 0,
@@ -372,61 +373,86 @@ this._matrixData = matrixData;
    * @private
    */
   _createValueCell(node, col, data, path) {
-    const td = document.createElement('td');
-    td.className = 'value-cell';
+      const td = document.createElement('td');
+      td.className = 'value-cell';
 
-    // Look up the value
-    const valueKey = col.valueKey;
-    const measureField = col.measure.field;
-    const valuesMap = node.values[valueKey];
-    const value = valuesMap ? valuesMap[measureField] : null;
+      // Look up the value
+      const valueKey = col.valueKey;
+      const measureField = col.measure.field;
+      const valuesMap = node.values[valueKey];
+      const value = valuesMap ? valuesMap[measureField] : null;
 
-    if (value != null && isFinite(value)) {
-      td.textContent = this._formatNumber(value, measureField);
-      td.dataset.value = value;
+      if (value != null && isFinite(value)) {
+        td.textContent = this._formatNumber(value, measureField);
+        td.dataset.value = value;
 
-      // Conditional formatting
-      const cfConfig = (this.options.cfConfigs && this.options.cfConfigs[measureField]);
-      if (cfConfig && cfConfig.enabled && data.valueRanges) {
-        this._applyConditionalFormat(td, value, measureField, data.valueRanges, cfConfig);
-      }
-    } else {
-      td.textContent = '–';
-      td.classList.add('value-null');
-    }
+        // Conditional formatting
+        const cfConfig =
+          this.options.cfConfigs?.[measureField];
 
-    // Total column styling
-    if (col.isTotal) {
-      td.classList.add('col-total');
-    }
-
-    // Nativer Tableau-Tooltip für eindeutig zuordenbare Blattzellen
-    const tupleId = node.children?.length
-      ? null
-      : node.tooltipTupleIds?.[col.valueKey];
-
-    if (Number.isInteger(tupleId)) {
-      td.addEventListener('mouseenter', event => {
-        if (this.options.onCellHover) {
-          this.options.onCellHover(tupleId, event);
+        if (
+          cfConfig &&
+          cfConfig.enabled &&
+          data.valueRanges
+        ) {
+          this._applyConditionalFormat(
+            td,
+            value,
+            measureField,
+            data.valueRanges,
+            cfConfig
+          );
         }
-      });
 
+      } else {
+        td.textContent = '–';
+        td.classList.add('value-null');
+      }
+
+      // Total column styling
+      if (col.isTotal) {
+        td.classList.add('col-total');
+      }
+
+      // Native Tableau hover tooltip for unambiguous leaf cells
+      const tupleId = node.children?.length
+        ? null
+        : node.tooltipTupleIds?.[col.valueKey];
+
+      if (Number.isInteger(tupleId)) {
+        td.addEventListener('mouseenter', event => {
+          this.options.onCellHover?.(tupleId, event);
+        });
+
+        // Close the hover tooltip when leaving the cell
+        td.addEventListener('mouseleave', event => {
+          this.options.onCellHover?.(0, event);
+        });
+      }
+
+      // Optional drill-through button
+      this._appendDrillButton(td, node, col);
+
+      return td;
     }
-
-    this._appendDrillButton(td, node, col);
-
-    return td;
-  }
 
   _appendDrillButton(td, node, col) {
-      const tupleId = node.drillTupleIds?.[col.valueKey];
-
-      if (!Number.isInteger(tupleId) ||
-          td.classList.contains('value-null')) {
+      // Drill-through disabled in Matrix Pro settings
+      if (this.options.showDrillThrough === false) {
         return;
       }
 
+      const tupleId = node.drillTupleIds?.[col.valueKey];
+
+      // No valid navigation target or empty cell
+      if (
+        !Number.isInteger(tupleId) ||
+        td.classList.contains('value-null')
+      ) {
+        return;
+      }
+
+      // Full column label
       const columnName = col.isTotal
         ? `Gesamt / ${col.label}`
         : [...(col.colCombo || []), col.label]
@@ -434,6 +460,7 @@ this._matrixData = matrixData;
             .join(' / ');
 
       const button = document.createElement('button');
+
       button.type = 'button';
       button.className = 'matrix-drillthrough-btn';
       button.title = 'Einzelposten öffnen';

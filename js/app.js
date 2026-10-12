@@ -257,6 +257,7 @@ class MatrixApp {
       this.renderer = new MatrixRenderer(container, {
         showSubtotals: this.config.showSubtotals !== false,
         showGrandTotal: this.config.showGrandTotal !== false,
+        showDrillThrough: this.config.showDrillThrough !== false,
         cfConfigs: this.config.cfConfigs || {},
         density: this.config.density || 'normal',
         fontSize: this.config.fontSize || '12px',
@@ -310,7 +311,13 @@ class MatrixApp {
   }
 
   async _onDrillThrough(context, event) {
-      if (this._drillThroughBusy) return;
+      if (this._drillThroughBusy) {
+        return;
+      }
+
+      if (this.config?.showDrillThrough === false) {
+        return;
+      }
 
       this._drillThroughBusy = true;
 
@@ -320,19 +327,29 @@ class MatrixApp {
       };
 
       try {
-        await this.connector.setDrillThroughParameters(context);
+        // 1. Pass the selected matrix context to configured parameters.
+        //    This is optional if no parameter mapping exists.
+        await this.connector.setDrillThroughParameters(
+          context,
+          this.config.drillThroughParameters || {}
+        );
 
+        // 2. Trigger the native Tableau selection action.
         await this.connector.selectDrillTuple(
           context.tupleId,
           anchor
         );
 
-      } catch (err) {
-        console.error('[MatrixApp] Drill-through:', err);
+      } catch (error) {
+        console.error(
+          '[MatrixApp] Drill-through error:',
+          error
+        );
 
         this._updateStatusBar(
-          `Einzelposten-Navigation: ${err.message}`
+          `Einzelposten-Navigation: ${error.message}`
         );
+
       } finally {
         this._drillThroughBusy = false;
       }
