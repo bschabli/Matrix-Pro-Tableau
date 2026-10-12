@@ -81,19 +81,6 @@ class MatrixApp {
       // 4. Setup instant real-time config listener (BroadcastChannel & Storage)
       this._setupConfigSync();
 
-      // Test: Maus verlässt den Bereich der Viz Extension
-      document.documentElement.addEventListener('pointerleave', () => {
-        console.log(
-          '[MatrixApp] Maus außerhalb der Extension – Kontext bleibt erhalten'
-        );
-      });
-
-      document.documentElement.addEventListener('pointerenter', () => {
-        console.log(
-          '[MatrixApp] Maus wieder innerhalb der Extension'
-        );
-      });
-
     } catch (err) {
       console.error('[MatrixApp] Initialization error:', err);
       this._showError(err);
@@ -290,9 +277,10 @@ class MatrixApp {
         },
 
 
-        onCellClick: (cellInfo) => this._onCellClick(cellInfo),
         onCellHover: (tupleId, event) =>
           this.connector.hoverTuple(tupleId, event),
+        onDrillThrough: (context, event) =>
+          this._onDrillThrough(context, event),
         onExpandToggle: (path, expanded) =>
           this._onExpandToggle(path, expanded)
       });
@@ -320,6 +308,35 @@ class MatrixApp {
       }
     }
   }
+
+  async _onDrillThrough(context, event) {
+      if (this._drillThroughBusy) return;
+
+      this._drillThroughBusy = true;
+
+      const anchor = {
+        pageX: event.pageX,
+        pageY: event.pageY
+      };
+
+      try {
+        await this.connector.setDrillThroughParameters(context);
+
+        await this.connector.selectDrillTuple(
+          context.tupleId,
+          anchor
+        );
+
+      } catch (err) {
+        console.error('[MatrixApp] Drill-through:', err);
+
+        this._updateStatusBar(
+          `Einzelposten-Navigation: ${err.message}`
+        );
+      } finally {
+        this._drillThroughBusy = false;
+      }
+    }
 
   /**
    * Generates a unique signature for the worksheet data to detect real updates.

@@ -338,6 +338,61 @@ class TableauConnector {
     return result;
   }
 
+  async setDrillThroughParameters(context) {
+      const parameters = await this._worksheet.getParametersAsync();
+
+      const parameterMap = new Map(
+        parameters.map(parameter => [parameter.name, parameter])
+      );
+
+      const values = {
+        'p.guv_detail_zeile': context.rowName,
+        'p.guv_detail_zeile_pfad': context.rowPath.join(' / '),
+        'p.guv_detail_spalte': context.columnName,
+        'p.guv_detail_spalte_id': context.columnId
+      };
+
+      for (const name of Object.keys(values)) {
+        if (!parameterMap.has(name)) {
+          throw new Error(`Tableau-Parameter fehlt: ${name}`);
+        }
+      }
+
+      for (const [name, value] of Object.entries(values)) {
+        const parameter = parameterMap.get(name);
+
+        if (String(parameter.currentValue?.value) !== String(value)) {
+          await parameter.changeValueAsync(String(value));
+        }
+      }
+    }
+
+    async selectDrillTuple(tupleId, event) {
+      if (!this._isVizExtension ||
+          !this._worksheet?.selectTuplesAsync ||
+          !Number.isInteger(tupleId)) {
+        throw new Error('Tableau-Selektion nicht verfügbar.');
+      }
+
+      // Vorherige Auswahl entfernen
+      await this._worksheet.selectTuplesAsync(
+        [],
+        tableau.SelectOptions.Simple
+      );
+
+      // Neuen Mark auswählen
+      await this._worksheet.selectTuplesAsync(
+        [tupleId],
+        tableau.SelectOptions.Simple,
+        {
+          tooltipAnchorPoint: {
+            x: event.pageX,
+            y: event.pageY
+          }
+        }
+      );
+    }
+
   // ──────────────────────────────────────────────────────────────────────────
   // Configuration Persistence (Extension Settings)
   // ──────────────────────────────────────────────────────────────────────────
@@ -478,7 +533,6 @@ class TableauConnector {
 
     const eventTypes = [
       tableau.TableauEventType.FilterChanged,
-      tableau.TableauEventType.MarkSelectionChanged
     ];
     if (tableau.TableauEventType.SummaryDataChanged) {
       eventTypes.push(tableau.TableauEventType.SummaryDataChanged);

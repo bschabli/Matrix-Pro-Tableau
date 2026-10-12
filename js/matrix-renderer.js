@@ -43,6 +43,7 @@ class MatrixRenderer {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2
       },
+      onDrillThrough: null,
       onCellClick: null,         // callback: (cellInfo) => void
       onExpandToggle: null,      // callback: (nodePath, expanded) => void
       ...options
@@ -399,11 +400,6 @@ this._matrixData = matrixData;
       td.classList.add('col-total');
     }
 
-    // Click handler for cross-filtering
-    td.addEventListener('click', () => {
-      this._handleCellClick(node, col, value, path);
-    });
-
     // Nativer Tableau-Tooltip für eindeutig zuordenbare Blattzellen
     const tupleId = node.children?.length
       ? null
@@ -418,8 +414,54 @@ this._matrixData = matrixData;
 
     }
 
+    this._appendDrillButton(td, node, col);
+
     return td;
   }
+
+  _appendDrillButton(td, node, col) {
+      const tupleId = node.drillTupleIds?.[col.valueKey];
+
+      if (!Number.isInteger(tupleId) ||
+          td.classList.contains('value-null')) {
+        return;
+      }
+
+      const columnName = col.isTotal
+        ? `Gesamt / ${col.label}`
+        : [...(col.colCombo || []), col.label]
+            .filter(Boolean)
+            .join(' / ');
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'matrix-drillthrough-btn';
+      button.title = 'Einzelposten öffnen';
+
+      button.setAttribute(
+        'aria-label',
+        `Einzelposten für ${node.label}, ${columnName} öffnen`
+      );
+
+      button.textContent = '↗';
+
+      button.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        this.options.onDrillThrough?.({
+          tupleId,
+          rowName: String(node.label),
+          rowLevel: node.level,
+          rowPath: node.rowPath || [String(node.label)],
+          columnName,
+          columnId: col.key
+        }, event);
+      });
+
+      td.classList.add('has-drillthrough');
+      td.appendChild(button);
+    }
 
   /**
    * Create a subtotal row for a parent node.
@@ -472,6 +514,8 @@ this._matrixData = matrixData;
         td.textContent = '–';
         td.classList.add('value-null');
       }
+
+      this._appendDrillButton(td, node, col);
 
       tr.appendChild(td);
     });

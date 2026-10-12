@@ -1245,3 +1245,53 @@ body.no-export .export-divider,
 .columns-menu-item:hover {
   background: var(--matrix-row-hover);
 }
+
+/* Drill-through navigation */
+
+.matrix-table tbody td.value-cell {
+  position: relative;
+  cursor: default;
+}
+
+.matrix-table tbody td.value-cell.has-drillthrough {
+  padding-right: 32px;
+}
+
+.matrix-drillthrough-btn {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+
+  width: 24px;
+  height: 24px;
+
+  border: none;
+  border-radius: 4px;
+
+  background: var(--matrix-header-bg);
+  color: var(--matrix-accent);
+
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition: opacity 0.12s ease;
+}
+
+.matrix-table td.value-cell:hover .matrix-drillthrough-btn,
+.matrix-table td.value-cell:focus-within .matrix-drillthrough-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.matrix-drillthrough-btn:hover {
+  background: var(--matrix-header-bg-hover);
+}
+
+.matrix-drillthrough-btn:focus-visible {
+  outline: 2px solid var(--matrix-accent);
+}
