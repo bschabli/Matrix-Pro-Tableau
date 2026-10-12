@@ -81,6 +81,19 @@ class MatrixApp {
       // 4. Setup instant real-time config listener (BroadcastChannel & Storage)
       this._setupConfigSync();
 
+      // Test: Maus verlässt den Bereich der Viz Extension
+      document.documentElement.addEventListener('pointerleave', () => {
+        console.log(
+          '[MatrixApp] Maus außerhalb der Extension – Kontext bleibt erhalten'
+        );
+      });
+
+      document.documentElement.addEventListener('pointerenter', () => {
+        console.log(
+          '[MatrixApp] Maus wieder innerhalb der Extension'
+        );
+      });
+
     } catch (err) {
       console.error('[MatrixApp] Initialization error:', err);
       this._showError(err);
