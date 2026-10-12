@@ -69,7 +69,7 @@ class ConfigDialog {
       this._bindUI();
 
       // Apply saved language (i18n)
-      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'es';
+      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'de';
       window._matrixLang = savedLang;
       if (typeof applyI18n === 'function') applyI18n(savedLang);
 
@@ -105,11 +105,12 @@ class ConfigDialog {
     bindSelect('theme-select', 'theme');
     bindSelect('density-select', 'density');
     bindSelect('fontsize-select', 'fontSize');
+    bindSelect('number-locale-select', 'numberLocale');
 
     // Language selector binding (live translation on change)
     const langEl = document.getElementById('language-select');
     if (langEl) {
-      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'es';
+      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'de';
       langEl.value = savedLang;
       langEl.addEventListener('change', (e) => {
         const newLang = e.target.value;
@@ -169,7 +170,7 @@ class ConfigDialog {
         cfSettingsPanel.style.display = 'block';
         cfSettingsPanel.innerHTML = `<div style="font-size: 11px; opacity: 0.6; padding: 4px;" data-i18n="no_active_measures">No hay medidas activas. Agrega campos a la repisa de Valores en Tableau.</div>`;
       }
-      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'es';
+      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'de';
       if (typeof applyI18n === 'function') applyI18n(savedLang);
     }
 
@@ -245,7 +246,7 @@ class ConfigDialog {
     if (valueFields.length === 0) {
       container.innerHTML = `<div style="font-size: 11px; opacity: 0.6; padding: 4px;" data-i18n="no_active_measures">No hay medidas activas. Agrega campos a la repisa de Valores en Tableau.</div>`;
       // Apply translation immediately
-      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'es';
+      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'de';
       if (typeof applyI18n === 'function') applyI18n(savedLang);
       return;
     }
@@ -326,7 +327,7 @@ class ConfigDialog {
     });
 
     // Apply translations to new dynamic elements
-    const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'es';
+    const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'de';
     if (typeof applyI18n === 'function') applyI18n(savedLang);
   }
 
@@ -399,7 +400,8 @@ class ConfigDialog {
         showToolbar: showtoolbarEl ? Boolean(showtoolbarEl.checked) : true,
         showExportButtons: showexportEl ? Boolean(showexportEl.checked) : true,
         showStatusBar: showstatusbarEl ? Boolean(showstatusbarEl.checked) : true,
-        language: getV('language-select') || localStorage.getItem('matrixLang') || 'es',
+        language: getV('language-select') || localStorage.getItem('matrixLang') || 'de',
+        numberLocale: getV('number-locale-select') || 'de-DE',
         valueFormats: valueFormats
       });
 

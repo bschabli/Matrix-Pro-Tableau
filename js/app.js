@@ -59,7 +59,7 @@ class MatrixApp {
       const currentTheme = (this.config && this.config.theme) ? this.config.theme : 'theme-light';
       document.body.className = currentTheme;
 
-      const currentLang = (this.config && this.config.language) ? this.config.language : (localStorage.getItem('matrixLang') || 'es');
+      const currentLang = (this.config && this.config.language) ? this.config.language : (localStorage.getItem('matrixLang') || 'de');
       if (typeof applyI18n === 'function') applyI18n(currentLang);
 
       if (this.config && this.config.worksheetName) {
@@ -80,6 +80,19 @@ class MatrixApp {
 
       // 4. Setup instant real-time config listener (BroadcastChannel & Storage)
       this._setupConfigSync();
+
+      // Test: Maus verlässt den Bereich der Viz Extension
+      document.documentElement.addEventListener('pointerleave', () => {
+        console.log(
+          '[MatrixApp] Maus außerhalb der Extension – Kontext bleibt erhalten'
+        );
+      });
+
+      document.documentElement.addEventListener('pointerenter', () => {
+        console.log(
+          '[MatrixApp] Maus wieder innerhalb der Extension'
+        );
+      });
 
     } catch (err) {
       console.error('[MatrixApp] Initialization error:', err);

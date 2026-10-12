@@ -51,7 +51,10 @@ class MatrixRenderer {
     this._matrixData = null;
     this._expandedPaths = new Set(); // tracks which tree paths are expanded
     this._selectedCell = null;       // currently selected cell for highlighting
-    this._numberFormatter = new Intl.NumberFormat('en-US', this.options.numberFormat);
+    this._numberFormatter = new Intl.NumberFormat(
+      this.options.numberLocale || 'de-DE',
+      this.options.numberFormat
+    );
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -415,11 +418,7 @@ this._matrixData = matrixData;
           this.options.onCellHover(tupleId, event);
         }
       });
-      td.addEventListener('mouseleave', event => {
-        if (this.options.onCellHover) {
-          this.options.onCellHover(0, event);
-        }
-      });
+
     }
 
     return td;
@@ -807,27 +806,32 @@ this._matrixData = matrixData;
   _formatNumber(value, measureField) {
     if (value == null || !isFinite(value)) return '–';
 
+    const locale = this.options.numberLocale || 'de-DE';
+
     const formats = this.options.valueFormats || {};
-    const format = formats[measureField] || { type: 'auto', decimals: 2 };
-    const dec = (format.decimals !== undefined) ? parseInt(format.decimals, 10) : 2;
+    const format = formats[measureField] || {
+      type: 'auto',
+      decimals: 2
+    };
+
+    const dec = (format.decimals !== undefined)
+      ? parseInt(format.decimals, 10)
+      : 2;
+
+    const options = {
+      minimumFractionDigits: dec,
+      maximumFractionDigits: dec
+    };
 
     if (format.type === 'percent') {
-      const val = value * 100;
-      return val.toLocaleString('en-US', {
-        minimumFractionDigits: dec,
-        maximumFractionDigits: dec
-      }) + '%';
-    } else if (format.type === 'currency') {
-      return '$' + value.toLocaleString('en-US', {
-        minimumFractionDigits: dec,
-        maximumFractionDigits: dec
-      });
-    } else {
-      return value.toLocaleString('en-US', {
-        minimumFractionDigits: dec,
-        maximumFractionDigits: dec
-      });
+      return (value * 100).toLocaleString(locale, options) + '%';
     }
+
+    if (format.type === 'currency') {
+      return '$' + value.toLocaleString(locale, options);
+    }
+
+    return value.toLocaleString(locale, options);
   }
 
   /**
