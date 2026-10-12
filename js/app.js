@@ -81,19 +81,6 @@ class MatrixApp {
       // 4. Setup instant real-time config listener (BroadcastChannel & Storage)
       this._setupConfigSync();
 
-      // Test: Maus verlässt den Bereich der Viz Extension
-      document.documentElement.addEventListener('pointerleave', () => {
-        console.log(
-          '[MatrixApp] Maus außerhalb der Extension – Kontext bleibt erhalten'
-        );
-      });
-
-      document.documentElement.addEventListener('pointerenter', () => {
-        console.log(
-          '[MatrixApp] Maus wieder innerhalb der Extension'
-        );
-      });
-
     } catch (err) {
       console.error('[MatrixApp] Initialization error:', err);
       this._showError(err);
@@ -270,6 +257,7 @@ class MatrixApp {
       this.renderer = new MatrixRenderer(container, {
         showSubtotals: this.config.showSubtotals !== false,
         showGrandTotal: this.config.showGrandTotal !== false,
+        showDrillThrough: this.config.showDrillThrough !== false,
         cfConfigs: this.config.cfConfigs || {},
         density: this.config.density || 'normal',
         fontSize: this.config.fontSize || '12px',
@@ -290,9 +278,10 @@ class MatrixApp {
         },
 
 
-        onCellClick: (cellInfo) => this._onCellClick(cellInfo),
         onCellHover: (tupleId, event) =>
           this.connector.hoverTuple(tupleId, event),
+        onDrillThrough: (context, event) =>
+          this._onDrillThrough(context, event),
         onExpandToggle: (path, expanded) =>
           this._onExpandToggle(path, expanded)
       });
@@ -320,6 +309,51 @@ class MatrixApp {
       }
     }
   }
+
+  async _onDrillThrough(context, event) {
+      if (this._drillThroughBusy) {
+        return;
+      }
+
+      if (this.config?.showDrillThrough === false) {
+        return;
+      }
+
+      this._drillThroughBusy = true;
+
+      const anchor = {
+        pageX: event.pageX,
+        pageY: event.pageY
+      };
+
+      try {
+        // 1. Pass the selected matrix context to configured parameters.
+        //    This is optional if no parameter mapping exists.
+        await this.connector.setDrillThroughParameters(
+          context,
+          this.config.drillThroughParameters || {}
+        );
+
+        // 2. Trigger the native Tableau selection action.
+        await this.connector.selectDrillTuple(
+          context.tupleId,
+          anchor
+        );
+
+      } catch (error) {
+        console.error(
+          '[MatrixApp] Drill-through error:',
+          error
+        );
+
+        this._updateStatusBar(
+          `Einzelposten-Navigation: ${error.message}`
+        );
+
+      } finally {
+        this._drillThroughBusy = false;
+      }
+    }
 
   /**
    * Generates a unique signature for the worksheet data to detect real updates.
