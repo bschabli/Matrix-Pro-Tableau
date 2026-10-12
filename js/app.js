@@ -535,6 +535,13 @@ class MatrixApp {
       };
     }
 
+    _renderVisibleMatrix() {
+      if (!this.renderer || !this._matrixData) return;
+
+      this.renderer.render(this._getVisibleMatrixData());
+      this._renderColumnPicker();
+    }
+
     _renderColumnPicker() {
     const panel = document.getElementById('columns-menu-list');
     if (!panel || !this._matrixData) return;
