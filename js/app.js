@@ -289,7 +289,9 @@ class MatrixApp {
             .catch(console.warn);
         },
 
-
+        onColumnReorder: (sourceKey, targetKey, insertAfter) => {
+          this._moveColumn(sourceKey, targetKey, insertAfter);
+        },
         onCellClick: (cellInfo) => this._onCellClick(cellInfo),
         onCellHover: (tupleId, event) =>
           this.connector.hoverTuple(tupleId, event),
@@ -420,12 +422,73 @@ class MatrixApp {
   // Toolbar
   // ──────────────────────────────────────────────────────────────────────────
 
+  _getOrderedColumns() {
+    if (!this._matrixData) return [];
+
+    const columns = this._matrixData.flatColumns;
+    const savedOrder = this.config.columnOrder || [];
+
+    // Total columns always stay at the end.
+    const normal = columns.filter(col => !col.isTotal);
+    const totals = columns.filter(col => col.isTotal);
+
+    const byKey = new Map(normal.map(col => [col.key, col]));
+    const ordered = [];
+
+    // Restore saved order.
+    savedOrder.forEach(key => {
+      if (byKey.has(key)) {
+        ordered.push(byKey.get(key));
+        byKey.delete(key);
+      }
+    });
+
+    // Append new columns that are not part of the saved order.
+    ordered.push(...byKey.values());
+
+    return [...ordered, ...totals];
+}
+
+  _moveColumn(sourceKey, targetKey, insertAfter = false) {
+    if (sourceKey === targetKey) return;
+
+    const columns = this._getOrderedColumns()
+      .filter(col => !col.isTotal);
+
+    const sourceIndex = columns.findIndex(c => c.key === sourceKey);
+    const targetIndex = columns.findIndex(c => c.key === targetKey);
+
+    if (sourceIndex < 0 || targetIndex < 0) return;
+
+    const [moved] = columns.splice(sourceIndex, 1);
+
+    const newTargetIndex = columns.findIndex(
+      c => c.key === targetKey
+    );
+
+    columns.splice(
+      newTargetIndex + (insertAfter ? 1 : 0),
+      0,
+      moved
+    );
+
+    // Save the complete order, including hidden columns.
+    this.config.columnOrder = columns.map(c => c.key);
+
+    // Re-render without querying Tableau again.
+    this._renderVisibleMatrix();
+    this._updateStatusBar();
+
+    this.connector.saveConfig(this.config)
+      .catch(console.warn);
+  }
+
   _getVisibleMatrixData() {
       if (!this._matrixData) return null;
 
       const hidden = new Set(this.config.hiddenColumns || []);
 
-      const flatColumns = this._matrixData.flatColumns.filter(
+      const flatColumns = this._getOrderedColumns().filter(
         col => !hidden.has(col.key)
       );
 
@@ -436,66 +499,112 @@ class MatrixApp {
       };
     }
 
-    _renderVisibleMatrix() {
-      if (!this.renderer || !this._matrixData) return;
-
-      this.renderer.render(this._getVisibleMatrixData());
-      this._renderColumnPicker();
-    }
-
     _renderColumnPicker() {
-      const panel = document.getElementById('columns-menu-list');
-      if (!panel || !this._matrixData) return;
+    const panel = document.getElementById('columns-menu-list');
+    if (!panel || !this._matrixData) return;
 
-      panel.replaceChildren();
+    const previousScroll = panel.scrollTop;
+    panel.replaceChildren();
 
-      const hidden = new Set(this.config.hiddenColumns || []);
-      const columns = this._matrixData.flatColumns;
+    const hidden = new Set(this.config.hiddenColumns || []);
+    const columns = this._getOrderedColumns();
+    const movable = columns.filter(col => !col.isTotal);
 
-      const visibleCount = columns.filter(
-        col => !hidden.has(col.key)
-      ).length;
+    const visibleCount = columns.filter(
+      col => !hidden.has(col.key)
+    ).length;
 
-      columns.forEach(col => {
-        const label = document.createElement('label');
-        label.className = 'columns-menu-item';
+    columns.forEach(col => {
+      const row = document.createElement('div');
+      row.className = 'columns-menu-item';
 
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = !hidden.has(col.key);
+      // Visibility checkbox
+      const label = document.createElement('label');
+      label.className = 'columns-menu-label';
 
-        // Keep at least one column visible.
-        checkbox.disabled = checkbox.checked && visibleCount === 1;
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = !hidden.has(col.key);
+      checkbox.disabled = checkbox.checked && visibleCount === 1;
 
-        const name = col.colCombo?.length
+      const name = col.isTotal
+        ? `Gesamt / ${col.label}`
+        : col.colCombo?.length
           ? `${col.colCombo.join(' / ')} / ${col.label}`
-          : col.isTotal
-            ? `Total / ${col.label}`
-            : col.label;
+          : col.label;
 
-        label.append(checkbox, document.createTextNode(name));
+      const text = document.createElement('span');
+      text.textContent = name;
+      text.title = name;
 
-        checkbox.addEventListener('change', () => {
-          const next = new Set(this.config.hiddenColumns || []);
+      label.append(checkbox, text);
 
-          if (checkbox.checked) {
-            next.delete(col.key);
-          } else {
-            next.add(col.key);
+      checkbox.addEventListener('change', () => {
+        const next = new Set(this.config.hiddenColumns || []);
+
+        if (checkbox.checked) {
+          next.delete(col.key);
+        } else {
+          next.add(col.key);
+        }
+
+        this.config.hiddenColumns = Array.from(next);
+
+        this._renderVisibleMatrix();
+        this._updateStatusBar();
+
+        this.connector.saveConfig(this.config)
+          .catch(console.warn);
+      });
+
+      // Reorder buttons
+      const controls = document.createElement('div');
+      controls.className = 'columns-menu-controls';
+
+      const index = movable.findIndex(c => c.key === col.key);
+
+      const actions = [
+        {
+          symbol: '←',
+          title: 'Nach links verschieben',
+          target: movable[index - 1],
+          after: false
+        },
+        {
+          symbol: '→',
+          title: 'Nach rechts verschieben',
+          target: movable[index + 1],
+          after: true
+        }
+      ];
+
+      actions.forEach(action => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'columns-move-btn';
+        button.textContent = action.symbol;
+        button.title = action.title;
+        button.disabled = col.isTotal || !action.target;
+
+        button.addEventListener('click', () => {
+          if (action.target) {
+            this._moveColumn(
+              col.key,
+              action.target.key,
+              action.after
+            );
           }
-
-          this.config.hiddenColumns = Array.from(next);
-
-          this._renderVisibleMatrix();
-          this._updateStatusBar();
-
-          this.connector.saveConfig(this.config)
-            .catch(console.warn);
         });
 
-        panel.appendChild(label);
+        controls.appendChild(button);
       });
-    }
+
+      row.append(label, controls);
+      panel.appendChild(row);
+    });
+
+    panel.scrollTop = previousScroll;
+  }
 
   /**
    * Bind toolbar button event listeners.

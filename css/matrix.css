@@ -1245,3 +1245,78 @@ body.no-export .export-divider,
 .columns-menu-item:hover {
   background: var(--matrix-row-hover);
 }
+
+/* Column reorder controls */
+
+.columns-menu-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.columns-menu-label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.columns-menu-controls {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.columns-move-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--matrix-border);
+  border-radius: 4px;
+  background: var(--matrix-bg);
+  color: var(--matrix-text);
+  cursor: pointer;
+}
+
+.columns-move-btn:hover:not(:disabled) {
+  background: var(--matrix-row-hover);
+}
+
+.columns-move-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Drag handles in table headers */
+
+.matrix-table thead th.column-draggable {
+  padding-left: 26px !important;
+}
+
+.column-drag-handle {
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: grab;
+  font-size: 15px;
+  opacity: 0.45;
+  user-select: none;
+}
+
+.column-drag-handle:hover {
+  opacity: 1;
+}
+
+.column-drag-handle:active {
+  cursor: grabbing;
+}
+
+.matrix-table thead th.column-drop-target {
+  box-shadow: inset 0 0 0 2px var(--matrix-accent);
+}
+
+.matrix-table thead th.column-dragging {
+  opacity: 0.5;
+}

@@ -39,6 +39,7 @@ class MatrixRenderer {
       cfConfigs: {},             // per-field conditional formatting configurations
       columnWidths: {},
       onColumnWidthChange: null,
+      onColumnReorder: null,
       numberFormat: {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2
@@ -244,10 +245,13 @@ this._matrixData = matrixData;
           rowIndex === numHeaderRows - 1 &&
           data.flatColumns[measureIndex]
         ) {
-          this._attachResizeHandle(
-            th,
-            data.flatColumns[measureIndex++].key
-          );
+          const col = data.flatColumns[measureIndex++];
+
+          if (!col.isTotal) {
+            this._attachColumnDragHandle(th, col.key);
+          }
+
+          this._attachResizeHandle(th, col.key);
         }
 
         tr.appendChild(th);
@@ -937,6 +941,83 @@ _setColumnWidth(key, width) {
     this.container.querySelector('.matrix-table')
   );
 }
+
+  _attachColumnDragHandle(th, key) {
+    const handle = document.createElement('span');
+
+    handle.className = 'column-drag-handle';
+    handle.textContent = '⠿';
+    handle.title = 'Spalte verschieben';
+    handle.draggable = true;
+
+    handle.addEventListener('dragstart', event => {
+      this._draggedColumnKey = key;
+
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', key);
+
+      th.classList.add('column-dragging');
+    });
+
+    handle.addEventListener('dragend', () => {
+      this._draggedColumnKey = null;
+
+      this.container.querySelectorAll(
+        '.column-drop-target, .column-dragging'
+      ).forEach(el => {
+        el.classList.remove(
+          'column-drop-target',
+          'column-dragging'
+        );
+      });
+    });
+
+    th.addEventListener('dragover', event => {
+      if (
+        !this._draggedColumnKey ||
+        this._draggedColumnKey === key
+      ) return;
+
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+
+      th.classList.add('column-drop-target');
+    });
+
+    th.addEventListener('dragleave', event => {
+      if (!th.contains(event.relatedTarget)) {
+        th.classList.remove('column-drop-target');
+      }
+    });
+
+    th.addEventListener('drop', event => {
+      const sourceKey = this._draggedColumnKey;
+
+      if (!sourceKey || sourceKey === key) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const rect = th.getBoundingClientRect();
+      const insertAfter = event.clientX > rect.left + rect.width / 2;
+
+      this._draggedColumnKey = null;
+      th.classList.remove('column-drop-target');
+
+      if (this.options.onColumnReorder) {
+        this.options.onColumnReorder(
+          sourceKey,
+          key,
+          insertAfter
+        );
+      }
+    });
+
+    th.classList.add('column-draggable');
+    th.appendChild(handle);
+  }
+
+
 
 _attachResizeHandle(th, key) {
   const handle = document.createElement('span');
