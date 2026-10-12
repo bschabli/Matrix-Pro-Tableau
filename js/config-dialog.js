@@ -25,7 +25,12 @@ class ConfigDialog {
       showVGrid: true,
       showSubtotals: true,
       showGrandTotal: true,
-      cfConfigs: {}
+      cfConfigs: {},
+      showDrillThrough: true,
+      drillThroughParameters: {
+        rowPath: '',
+        columnName: ''
+      },
     };
     this._currentCfField = null;
   }
@@ -137,6 +142,27 @@ class ConfigDialog {
     bindToggle('toggle-showtoolbar', 'showToolbar', true);
     bindToggle('toggle-showexport', 'showExportButtons', true);
     bindToggle('toggle-showstatusbar', 'showStatusBar', true);
+
+    // Drill-through button visibility
+    bindToggle(
+      'toggle-showdrill',
+      'showDrillThrough',
+      true
+    );
+
+    // Optional drill-through parameter mappings
+    const drillMappings =
+      this._config.drillThroughParameters || {};
+
+    ['rowPath', 'columnName'].forEach(source => {
+      const input = document.getElementById(
+        `drill-param-${source}`
+      );
+
+      if (input) {
+        input.value = drillMappings[source] || '';
+      }
+    });
 
     // CF Setup
     const cfFieldSelectRow = document.getElementById('cf-field-select-row');
@@ -402,7 +428,14 @@ class ConfigDialog {
         showStatusBar: showstatusbarEl ? Boolean(showstatusbarEl.checked) : true,
         language: getV('language-select') || localStorage.getItem('matrixLang') || 'de',
         numberLocale: getV('number-locale-select') || 'de-DE',
-        valueFormats: valueFormats
+        valueFormats: valueFormats,
+        showDrillThrough:
+          document.getElementById('toggle-showdrill')?.checked ?? true,
+
+        drillThroughParameters: {
+          rowPath: getV('drill-param-rowPath').trim(),
+          columnName: getV('drill-param-columnName').trim()
+        },
       });
 
       const updatedJson = JSON.stringify(updated);

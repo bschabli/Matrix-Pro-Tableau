@@ -295,28 +295,60 @@ class PivotEngine {
    * Each node has aggregated values for every flat-column key.
    * @private
    */
-  _buildRowTree(records, level, colCombinations) {
-      if (level >= this.rowFields.length) {
-        return [];
-      }
+  _buildRowTree(records, level, colCombinations, parentLabels = []) {
+      if (level >= this.rowFields.length) return [];
 
       const field = this.rowFields[level];
       const groups = this._groupBy(records, field);
 
-      return Array.from(groups.entries()).map(([label, groupRecords]) => ({
-        label,
-        field,
-        level,
-        expanded: level === 0,
-        children: this._buildRowTree(
-          groupRecords,
-          level + 1,
-          colCombinations
-        ),
-        values: this._computeValues(groupRecords, colCombinations),
-        recordCount: groupRecords.length,
-        tooltipTupleIds: this._getTooltipTupleIds(groupRecords)
-      }));
+      return Array.from(groups.entries()).map(([label, groupRecords]) => {
+        const rowPath = [...parentLabels, String(label)];
+
+        return {
+          label,
+          field,
+          level,
+          rowPath,
+          expanded: level === 0,
+          children: this._buildRowTree(
+            groupRecords,
+            level + 1,
+            colCombinations,
+            rowPath
+          ),
+          values: this._computeValues(groupRecords, colCombinations),
+          recordCount: groupRecords.length,
+          tooltipTupleIds: this._getTooltipTupleIds(groupRecords),
+          drillTupleIds: this._getDrillTupleIds(groupRecords)
+        };
+      });
+    }
+
+    _getDrillTupleIds(records) {
+      const result = {};
+
+      for (const record of records) {
+        const tupleId = record.__tupleId;
+
+        if (!Number.isInteger(tupleId) || tupleId <= 0) continue;
+
+        const key = this.colFields.length
+          ? this.colFields.map(field => {
+              const value = this._getRowValue(record, field);
+              return value != null ? String(value) : '(Blank)';
+            }).join('|')
+          : 'ALL';
+
+        if (result[key] === undefined) {
+          result[key] = tupleId;
+        }
+
+        if (result.TOTAL === undefined) {
+          result.TOTAL = tupleId;
+        }
+      }
+
+      return result;
     }
 
   _getTooltipTupleIds(records) {

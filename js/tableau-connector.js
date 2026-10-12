@@ -338,6 +338,102 @@ class TableauConnector {
     return result;
   }
 
+  async setDrillThroughParameters(context, mappings = {}) {
+      const sources = {
+        rowPath: (context.rowPath || []).join(' | '),
+        columnName: context.columnName || ''
+      };
+
+      // Only use explicitly configured parameter mappings.
+      const assignments = Object.entries(mappings)
+        .filter(([source, parameterName]) =>
+          Object.prototype.hasOwnProperty.call(sources, source) &&
+          typeof parameterName === 'string' &&
+          parameterName.trim().length > 0
+        )
+        .map(([source, parameterName]) => ({
+          name: parameterName.trim(),
+          value: String(sources[source])
+        }));
+
+      // No mapping configured: navigation works without parameters.
+      if (assignments.length === 0) {
+        return;
+      }
+
+      if (!this._worksheet?.getParametersAsync) {
+        throw new Error(
+          'Tableau-Parameter-API nicht verfügbar.'
+        );
+      }
+
+      // Prevent conflicting assignments to the same parameter.
+      const names = assignments.map(item => item.name);
+
+      if (new Set(names).size !== names.length) {
+        throw new Error(
+          'Ein Tableau-Parameter darf nur einer Information zugeordnet werden.'
+        );
+      }
+
+      const parameters = await this._worksheet.getParametersAsync();
+
+      const parameterMap = new Map(
+        parameters.map(parameter => [
+          parameter.name,
+          parameter
+        ])
+      );
+
+      // Validate all configured parameters before changing any values.
+      for (const assignment of assignments) {
+        if (!parameterMap.has(assignment.name)) {
+          throw new Error(
+            `Konfigurierter Tableau-Parameter nicht gefunden: ${assignment.name}`
+          );
+        }
+      }
+
+      // Update only values that have actually changed.
+      for (const assignment of assignments) {
+        const parameter = parameterMap.get(assignment.name);
+
+        if (
+          String(parameter.currentValue?.value) !== assignment.value
+        ) {
+          await parameter.changeValueAsync(
+            assignment.value
+          );
+        }
+      }
+    }
+
+    async selectDrillTuple(tupleId, event) {
+      if (!this._isVizExtension ||
+          !this._worksheet?.selectTuplesAsync ||
+          !Number.isInteger(tupleId)) {
+        throw new Error('Tableau-Selektion nicht verfügbar.');
+      }
+
+      // Vorherige Auswahl entfernen
+      await this._worksheet.selectTuplesAsync(
+        [],
+        tableau.SelectOptions.Simple
+      );
+
+      // Neuen Mark auswählen
+      await this._worksheet.selectTuplesAsync(
+        [tupleId],
+        tableau.SelectOptions.Simple,
+        {
+          tooltipAnchorPoint: {
+            x: event.pageX,
+            y: event.pageY
+          }
+        }
+      );
+    }
+
   // ──────────────────────────────────────────────────────────────────────────
   // Configuration Persistence (Extension Settings)
   // ──────────────────────────────────────────────────────────────────────────
@@ -478,7 +574,6 @@ class TableauConnector {
 
     const eventTypes = [
       tableau.TableauEventType.FilterChanged,
-      tableau.TableauEventType.MarkSelectionChanged
     ];
     if (tableau.TableauEventType.SummaryDataChanged) {
       eventTypes.push(tableau.TableauEventType.SummaryDataChanged);
