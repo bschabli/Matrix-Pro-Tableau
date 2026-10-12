@@ -1014,79 +1014,134 @@ _setColumnWidth(key, width) {
 }
 
   _attachColumnDragHandle(th, key) {
-    const handle = document.createElement('span');
+  const handle = document.createElement('span');
+  handle.className = 'column-drag-handle';
+  handle.textContent = '⠿';
+  handle.title = 'Spalte verschieben';
 
-    handle.className = 'column-drag-handle';
-    handle.textContent = '⠿';
-    handle.title = 'Spalte verschieben';
-    handle.draggable = true;
+  // No native browser drag-and-drop!
+  handle.draggable = false;
 
-    handle.addEventListener('dragstart', event => {
-      this._draggedColumnKey = key;
+  th.dataset.columnKey = key;
+  th.classList.add('column-draggable');
+  th.appendChild(handle);
 
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', key);
+  let drag = null;
 
-      th.classList.add('column-dragging');
-    });
+  const clearHighlight = () => {
+    this.container.querySelectorAll('.column-drop-target')
+      .forEach(el => el.classList.remove('column-drop-target'));
+  };
 
-    handle.addEventListener('dragend', () => {
-      this._draggedColumnKey = null;
+  // Identify the header under the mouse pointer.
+  const findTarget = event => {
+    const element = document.elementFromPoint(
+      event.clientX,
+      event.clientY
+    );
 
-      this.container.querySelectorAll(
-        '.column-drop-target, .column-dragging'
-      ).forEach(el => {
-        el.classList.remove(
-          'column-drop-target',
-          'column-dragging'
-        );
-      });
-    });
+    const target = element?.closest('th[data-column-key]');
 
-    th.addEventListener('dragover', event => {
-      if (
-        !this._draggedColumnKey ||
-        this._draggedColumnKey === key
-      ) return;
+    if (
+      !target ||
+      !this.container.contains(target) ||
+      target.dataset.columnKey === key
+    ) {
+      return null;
+    }
 
-      event.preventDefault();
-      event.dataTransfer.dropEffect = 'move';
+    return target;
+  };
 
-      th.classList.add('column-drop-target');
-    });
+  handle.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || !event.isPrimary) return;
 
-    th.addEventListener('dragleave', event => {
-      if (!th.contains(event.relatedTarget)) {
-        th.classList.remove('column-drop-target');
-      }
-    });
+    event.preventDefault();
+    event.stopPropagation();
 
-    th.addEventListener('drop', event => {
-      const sourceKey = this._draggedColumnKey;
+    drag = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false
+    };
 
-      if (!sourceKey || sourceKey === key) return;
+    handle.setPointerCapture(event.pointerId);
+  });
 
-      event.preventDefault();
-      event.stopPropagation();
+  handle.addEventListener('pointermove', event => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
 
-      const rect = th.getBoundingClientRect();
-      const insertAfter = event.clientX > rect.left + rect.width / 2;
+    const distance = Math.hypot(
+      event.clientX - drag.startX,
+      event.clientY - drag.startY
+    );
 
-      this._draggedColumnKey = null;
-      th.classList.remove('column-drop-target');
+    // Small movement threshold avoids accidental dragging.
+    if (!drag.moved && distance < 5) return;
 
-      if (this.options.onColumnReorder) {
-        this.options.onColumnReorder(
-          sourceKey,
-          key,
-          insertAfter
-        );
-      }
-    });
+    event.preventDefault();
+    drag.moved = true;
 
-    th.classList.add('column-draggable');
-    th.appendChild(handle);
-  }
+    th.classList.add('column-dragging');
+    clearHighlight();
+
+    const target = findTarget(event);
+
+    if (target) {
+      target.classList.add('column-drop-target');
+    }
+  });
+
+  const finishDrag = (event, cancelled = false) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const moved = drag.moved;
+    const target = !cancelled && moved
+      ? findTarget(event)
+      : null;
+
+    drag = null;
+
+    clearHighlight();
+    th.classList.remove('column-dragging');
+
+    if (handle.hasPointerCapture(event.pointerId)) {
+      handle.releasePointerCapture(event.pointerId);
+    }
+
+    if (!target) return;
+
+    const rect = target.getBoundingClientRect();
+    const insertAfter =
+      event.clientX > rect.left + rect.width / 2;
+
+    if (this.options.onColumnReorder) {
+      this.options.onColumnReorder(
+        key,
+        target.dataset.columnKey,
+        insertAfter
+      );
+    }
+  };
+
+  handle.addEventListener('pointerup', event => {
+    finishDrag(event);
+  });
+
+  handle.addEventListener('pointercancel', event => {
+    finishDrag(event, true);
+  });
+
+  handle.addEventListener('lostpointercapture', () => {
+    drag = null;
+    clearHighlight();
+    th.classList.remove('column-dragging');
+  });
+}
 
 
 

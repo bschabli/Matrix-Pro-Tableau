@@ -1303,6 +1303,7 @@ body.no-export .export-divider,
   font-size: 15px;
   opacity: 0.45;
   user-select: none;
+  touch-action: none;
 }
 
 .column-drag-handle:hover {
