@@ -907,7 +907,7 @@ const I18N = {
 };
 
 /** Global active language */
-window._matrixLang = window._matrixLang || 'es';
+window._matrixLang = window._matrixLang || 'de';
 
 /**
  * Get translation for a key in the current language.
@@ -916,7 +916,7 @@ window._matrixLang = window._matrixLang || 'es';
  * @returns {string}
  */
 function t(key, lang) {
-  const locale = lang || window._matrixLang || 'es';
+  const locale = lang || window._matrixLang || 'de';
   const dict = I18N[locale] || I18N['es'];
   return dict[key] !== undefined ? dict[key] : (I18N['en'][key] !== undefined ? I18N['en'][key] : key);
 }
