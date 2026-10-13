@@ -213,22 +213,33 @@ class TableauConnector {
    * @param {string} worksheetName
    * @returns {Promise<Array<{fieldName: string, dataType: string, index: number}>>}
    */
-  async getWorksheetFields(worksheetName) {
-    const ws = this.getWorksheet(worksheetName);
-    if (!ws) throw new Error(`Worksheet "${worksheetName}" not found.`);
+ async getWorksheetFields(worksheetName) {
+      const ws = this.getWorksheet(worksheetName);
 
-    try {
-      const dataTable = await ws.getSummaryDataAsync();
-      return dataTable.columns.map(col => ({
-        fieldName: col.fieldName,
-        dataType: col.dataType,
-        index: col.index
-      }));
-    } catch (err) {
-      console.error(`[TableauConnector] Failed to get fields for "${worksheetName}":`, err);
-      throw err;
+      if (!ws) {
+        throw new Error(
+          `Worksheet "${worksheetName}" not found.`
+        );
+      }
+
+      try {
+        const columns = await ws.getSummaryColumnsInfoAsync();
+
+        return columns.map(col => ({
+          fieldName: col.fieldName,
+          dataType: col.dataType,
+          index: col.index
+        }));
+
+      } catch (err) {
+        console.error(
+          `[TableauConnector] Failed to get fields for "${worksheetName}":`,
+          err
+        );
+
+        throw err;
+      }
     }
-  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // Data Extraction
@@ -439,39 +450,36 @@ class TableauConnector {
   // ──────────────────────────────────────────────────────────────────────────
 
   /**
-   * Save configuration to extension settings & localStorage.
-   * @param {Object} config - Configuration object to save
-   * @returns {Promise<void>}
-   */
-  async saveConfig(config) {
-    const raw = JSON.stringify(config);
-    try { localStorage.setItem('matrixConfig', raw); } catch(e) {}
-    if (typeof tableau !== 'undefined' && tableau.extensions && tableau.extensions.settings) {
-      tableau.extensions.settings.set('matrixConfig', raw);
-      try { await tableau.extensions.settings.saveAsync(); } catch(e) {}
-    }
-  }
-
-  /**
    * Load configuration from localStorage or extension settings.
    * @returns {Object|null}
    */
   loadConfig() {
-    let raw = null;
-    try { raw = localStorage.getItem('matrixConfig'); } catch(e) {}
+      if (
+        typeof tableau === 'undefined' ||
+        !tableau.extensions?.settings
+      ) {
+        return null;
+      }
 
-    if (!raw && typeof tableau !== 'undefined' && tableau.extensions && tableau.extensions.settings) {
-      raw = tableau.extensions.settings.get('matrixConfig');
+      const raw = tableau.extensions.settings.get('matrixConfig');
+
+      if (!raw) return null;
+
+      try {
+        const config = JSON.parse(raw);
+
+        // Old temporary field catalog must not be persisted.
+        delete config.availableSortFields;
+
+        return config;
+      } catch (err) {
+        console.error(
+          '[TableauConnector] Invalid Tableau configuration:',
+          err
+        );
+        return null;
+      }
     }
-
-    if (!raw) return null;
-
-    try {
-      return JSON.parse(raw);
-    } catch (err) {
-      return null;
-    }
-  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // Configuration Dialog
@@ -482,24 +490,24 @@ class TableauConnector {
    * @param {string} dialogUrl - URL to the config.html page
    * @returns {Promise<string>} - Payload returned by the dialog
    */
-  async openConfigDialog(dialogUrl) {
-    try {
-      const payload = await tableau.extensions.ui.displayDialogAsync(
-        dialogUrl,
-        '', // initial payload (unused; config is read from settings)
-        { height: 640, width: 540 }
-      );
-      console.log('[TableauConnector] Config dialog closed. Payload:', payload);
-      return payload;
-    } catch (err) {
-      // tableau.ErrorCodes.DialogClosedByUser means user cancelled
-      if (err.errorCode === tableau.ErrorCodes.DialogClosedByUser) {
-        console.log('[TableauConnector] Config dialog cancelled by user.');
-        return null;
+   async openConfigDialog(dialogUrl, context = {}) {
+      try {
+        return await tableau.extensions.ui.displayDialogAsync(
+          dialogUrl,
+          JSON.stringify(context),
+          { height: 640, width: 540 }
+        );
+      } catch (err) {
+        if (
+          err.errorCode ===
+          tableau.ErrorCodes.DialogClosedByUser
+        ) {
+          return null;
+        }
+
+        throw err;
       }
-      throw err;
     }
-  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // Cross-Filtering

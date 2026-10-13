@@ -59,7 +59,7 @@ class MatrixApp {
       const currentTheme = (this.config && this.config.theme) ? this.config.theme : 'theme-light';
       document.body.className = currentTheme;
 
-      const currentLang = (this.config && this.config.language) ? this.config.language : (localStorage.getItem('matrixLang') || 'de');
+      const currentLang = this.config?.language || 'de';
       if (typeof applyI18n === 'function') applyI18n(currentLang);
 
       if (this.config && this.config.worksheetName) {
@@ -77,9 +77,6 @@ class MatrixApp {
 
       // 3. Wire up toolbar buttons
       this._bindToolbar();
-
-      // 4. Setup instant real-time config listener (BroadcastChannel & Storage)
-      this._setupConfigSync();
 
     } catch (err) {
       console.error('[MatrixApp] Initialization error:', err);
@@ -193,7 +190,6 @@ class MatrixApp {
           this.config.rowFields = encodings.rowFields || [];
           this.config.colFields = encodings.colFields || [];
           this.config.valueFields = encodings.valueFields || [];
-          this.connector.saveConfig(this.config);
         }
       }
 
@@ -293,9 +289,6 @@ class MatrixApp {
             ...(this.config.columnWidths || {}),
             [key]: width
           };
-
-          this.connector.saveConfig(this.config)
-            .catch(console.warn);
         },
 
         onColumnReorder: (sourceKey, targetKey, insertAfter) => {
@@ -406,30 +399,76 @@ class MatrixApp {
    * Open the configuration dialog.
    * @private
    */
-  async _openConfigDialog() {
-    try {
-      const configUrl = window.location.href.replace(/\/[^/]*$/, '/config.html');
-      await this.connector.openConfigDialog(configUrl);
+    async _openConfigDialog() {
+      try {
+        const configUrl = window.location.href.replace(
+          /\/[^/]*$/,
+          '/config.html'
+        );
 
-      // Reload fresh configuration (read synchronously from localStorage/settings)
-      const freshConfig = this.connector.loadConfig();
-      if (freshConfig) {
-        this.config = Object.assign({}, this.config, freshConfig);
+        // Get the current worksheet fields for the sort configuration.
+        let availableFields = [];
 
-        // Apply theme immediately
+        try {
+          const columns = await this.connector.getWorksheetFields(
+            this.config.worksheetName
+          );
+
+          availableFields = columns.map(col => col.fieldName);
+        } catch (err) {
+          console.warn(
+            '[MatrixApp] Could not retrieve Tableau fields:',
+            err
+          );
+        }
+
+        // Pass current session settings without persisting them.
+        const result = await this.connector.openConfigDialog(
+          configUrl,
+          {
+            config: this.config,
+            availableFields
+          }
+        );
+
+        // Cancelled dialog: no changes to the matrix.
+        if (result !== 'saved') return;
+
+        // Read only the settings saved in the workbook.
+        const freshConfig = this.connector.loadConfig();
+
+        if (!freshConfig) {
+          throw new Error(
+            'Gespeicherte Tableau-Konfiguration konnte nicht geladen werden.'
+          );
+        }
+
+        this.config = freshConfig;
+
         const theme = this.config.theme || 'theme-light';
         document.body.className = theme;
+
         const appEl = document.getElementById('app');
         if (appEl) appEl.className = theme;
-        const wrapEl = document.getElementById('matrix-wrapper');
-        if (wrapEl) wrapEl.className = `matrix-wrapper ${theme}`;
 
+        const wrapEl = document.getElementById('matrix-wrapper');
+        if (wrapEl) {
+          wrapEl.className = `matrix-wrapper ${theme}`;
+        }
+
+        if (typeof applyI18n === 'function') {
+          applyI18n(this.config.language || 'de');
+        }
+
+        this._applyVisibilityClasses();
+
+        // Apply the saved settings to the matrix.
         await this._refresh();
+
+      } catch (err) {
+        console.error('[MatrixApp] Config dialog error:', err);
       }
-    } catch (err) {
-      console.error('[MatrixApp] Config dialog error:', err);
     }
-  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // Event Handlers
@@ -535,9 +574,6 @@ class MatrixApp {
     // Re-render without querying Tableau again.
     this._renderVisibleMatrix();
     this._updateStatusBar();
-
-    this.connector.saveConfig(this.config)
-      .catch(console.warn);
   }
 
   _getVisibleMatrixData() {
@@ -616,9 +652,6 @@ class MatrixApp {
 
         this._renderVisibleMatrix();
         this._updateStatusBar();
-
-        this.connector.saveConfig(this.config)
-          .catch(console.warn);
       });
 
       // Reorder buttons

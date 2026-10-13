@@ -32,6 +32,7 @@ class ConfigDialog {
         columnName: ''
       },
     };
+    this._availableSortFields = [];
     this._currentCfField = null;
   }
 
@@ -39,52 +40,69 @@ class ConfigDialog {
    * Initialize the configuration dialog safely.
    */
   async init() {
-    try {
-      // Safely initialize Tableau extension dialog if available
-      if (typeof tableau !== 'undefined' && tableau.extensions && typeof tableau.extensions.initializeDialogAsync === 'function') {
-        try {
+      try {
+        const payload =
           await tableau.extensions.initializeDialogAsync();
-          const savedRaw = tableau.extensions.settings.get('matrixConfig');
-          if (savedRaw) {
-            try {
-              const parsed = JSON.parse(savedRaw);
-              this._config = Object.assign({}, this._config, parsed);
-              this._config.cfConfigs = this._config.cfConfigs || {};
-            } catch (e) {
-              console.warn('[ConfigDialog] Could not parse saved config from Tableau settings');
-            }
-          }
-        } catch (tErr) {
-          console.warn('[ConfigDialog] Tableau dialog init warning:', tErr);
+
+        let context = {};
+
+        try {
+          context = JSON.parse(payload || '{}');
+        } catch (err) {
+          console.warn('[ConfigDialog] Invalid dialog payload:', err);
         }
-      } else {
-        // Fallback for standalone/dev mode
-        const savedRaw = localStorage.getItem('matrixConfig');
-        if (savedRaw) {
+
+        // Configuration saved in the Tableau workbook.
+        let savedConfig = {};
+
+        const raw = tableau.extensions.settings.get('matrixConfig');
+
+        if (raw) {
           try {
-            this._config = Object.assign({}, this._config, JSON.parse(savedRaw));
-            this._config.cfConfigs = this._config.cfConfigs || {};
-          } catch (e) {}
+            savedConfig = JSON.parse(raw);
+          } catch (err) {
+            console.warn('[ConfigDialog] Invalid saved config:', err);
+          }
         }
+
+        // Current matrix session takes precedence.
+        // This includes column widths, order and visibility.
+        this._config = {
+          ...this._config,
+          ...savedConfig,
+          ...(context.config || {})
+        };
+
+        this._config.cfConfigs = this._config.cfConfigs || {};
+
+        // Tableau field metadata is used only temporarily.
+        this._availableSortFields =
+          Array.isArray(context.availableFields)
+            ? context.availableFields
+            : [];
+
+      } catch (err) {
+        console.error(
+          '[ConfigDialog] Initialization error:',
+          err
+        );
       }
-    } catch (err) {
-      console.warn('[ConfigDialog] Init fallback handled:', err);
-    } finally {
-      // Always bind UI regardless of Tableau environment
+
       this._bindUI();
 
-      // Apply saved language (i18n)
-      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'de';
-      window._matrixLang = savedLang;
-      if (typeof applyI18n === 'function') applyI18n(savedLang);
+      const language = this._config.language || 'de';
+      window._matrixLang = language;
 
-      const saveBtn = document.getElementById('btn-save');
-      const cancelBtn = document.getElementById('btn-cancel');
+      if (typeof applyI18n === 'function') {
+        applyI18n(language);
+      }
 
-      if (saveBtn) saveBtn.addEventListener('click', () => this._save());
-      if (cancelBtn) cancelBtn.addEventListener('click', () => this._cancel());
+      document.getElementById('btn-save')
+        ?.addEventListener('click', () => this._save());
+
+      document.getElementById('btn-cancel')
+        ?.addEventListener('click', () => this._cancel());
     }
-  }
 
   /**
    * Bind all format controls.
@@ -112,24 +130,21 @@ class ConfigDialog {
     bindSelect('fontsize-select', 'fontSize');
     bindSelect('number-locale-select', 'numberLocale');
 
-    // Language selector binding (live translation on change)
+    // Language selection applies inside the dialog.
+    // The main matrix is updated only after saving.
     const langEl = document.getElementById('language-select');
-    if (langEl) {
-      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'de';
-      langEl.value = savedLang;
-      langEl.addEventListener('change', (e) => {
-        const newLang = e.target.value;
-        this._config.language = newLang;
-        localStorage.setItem('matrixLang', newLang);
-        if (typeof applyI18n === 'function') applyI18n(newLang);
 
-        // Broadcast to main window immediately for live preview
-        try {
-          if ('BroadcastChannel' in window) {
-            const bc = new BroadcastChannel('matrix_config_channel');
-            bc.postMessage({ type: 'APPLY_CONFIG', config: this._config });
-          }
-        } catch (err) {}
+    if (langEl) {
+      langEl.value = this._config.language || 'de';
+
+      langEl.addEventListener('change', event => {
+        const language = event.target.value;
+
+        this._config.language = language;
+
+        if (typeof applyI18n === 'function') {
+          applyI18n(language);
+        }
       });
     }
 
@@ -196,7 +211,7 @@ class ConfigDialog {
         cfSettingsPanel.style.display = 'block';
         cfSettingsPanel.innerHTML = `<div style="font-size: 11px; opacity: 0.6; padding: 4px;" data-i18n="no_active_measures">No hay medidas activas. Agrega campos a la repisa de Valores en Tableau.</div>`;
       }
-      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'de';
+      const savedLang = this._config.language || 'de';
       if (typeof applyI18n === 'function') applyI18n(savedLang);
     }
 
@@ -274,7 +289,7 @@ class ConfigDialog {
       ]);
 
       const availableFields = [
-        ...new Set(this._config.availableSortFields || [])
+        ...new Set(this._availableSortFields)
       ].filter(field =>
         typeof field === 'string' &&
         !field.startsWith('__') &&
@@ -380,7 +395,7 @@ class ConfigDialog {
     if (valueFields.length === 0) {
       container.innerHTML = `<div style="font-size: 11px; opacity: 0.6; padding: 4px;" data-i18n="no_active_measures">No hay medidas activas. Agrega campos a la repisa de Valores en Tableau.</div>`;
       // Apply translation immediately
-      const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'de';
+      const savedLang = this._config.language || 'de';
       if (typeof applyI18n === 'function') applyI18n(savedLang);
       return;
     }
@@ -461,7 +476,7 @@ class ConfigDialog {
     });
 
     // Apply translations to new dynamic elements
-    const savedLang = this._config.language || localStorage.getItem('matrixLang') || 'de';
+    const savedLang = this._config.language || 'de';
     if (typeof applyI18n === 'function') applyI18n(savedLang);
   }
 
@@ -471,163 +486,161 @@ class ConfigDialog {
    * @private
    */
   async _save() {
+    const saveBtn = document.getElementById('btn-save');
+
+    if (saveBtn?.disabled) return;
+
     try {
-      this._saveCurrentCfFieldState(); // Capture current state before save
+      this._saveCurrentCfFieldState();
 
-      const themeEl = document.getElementById('theme-select');
-      const densityEl = document.getElementById('density-select');
-      const fontSizeEl = document.getElementById('fontsize-select');
+      const getV = id =>
+        document.getElementById(id)?.value || '';
 
-      const zebraEl = document.getElementById('toggle-zebra');
-      const hgridEl = document.getElementById('toggle-hgrid');
-      const vgridEl = document.getElementById('toggle-vgrid');
-      const subtotalsEl = document.getElementById('toggle-subtotals');
-      const grandtotalEl = document.getElementById('toggle-grandtotal');
-      const rowtotalEl = document.getElementById('toggle-rowtotal');
+      const getC = (id, fallback = true) => {
+        const element = document.getElementById(id);
+        return element ? element.checked : fallback;
+      };
 
-      const showtoolbarEl = document.getElementById('toggle-showtoolbar');
-      const showexportEl = document.getElementById('toggle-showexport');
-      const showstatusbarEl = document.getElementById('toggle-showstatusbar');
+      // Preserve existing measure formats.
+      const valueFormats = {
+        ...(this._config.valueFormats || {})
+      };
 
-      const getV = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+      (this._config.valueFields || []).forEach(vf => {
+        const typeEl = document.getElementById(
+          `val-fmt-type-${vf.field}`
+        );
 
-      let existing = {};
-      try {
-        const localRaw = localStorage.getItem('matrixConfig');
-        if (localRaw) existing = JSON.parse(localRaw);
-      } catch (e) {}
+        const decEl = document.getElementById(
+          `val-fmt-dec-${vf.field}`
+        );
 
-      if (typeof tableau !== 'undefined' && tableau.extensions && tableau.extensions.settings) {
-        const savedRaw = tableau.extensions.settings.get('matrixConfig');
-        if (savedRaw) {
-          try { existing = Object.assign({}, existing, JSON.parse(savedRaw)); } catch (e) {}
-        }
-      }
+        const labelEl = document.getElementById(
+          `val-fmt-label-${vf.field}`
+        );
 
-      // Collect value formats from dynamic DOM elements
-      const valueFormats = {};
-      (existing.valueFields || this._config.valueFields || []).forEach(vf => {
-        const typeEl = document.getElementById(`val-fmt-type-${vf.field}`);
-        const decEl = document.getElementById(`val-fmt-dec-${vf.field}`);
-        const labelEl = document.getElementById(`val-fmt-label-${vf.field}`);
-        
-        if (typeEl && decEl) {
-          valueFormats[vf.field] = {
-            type: typeEl.value,
-            decimals: parseInt(decEl.value, 10) || 0,
-            label: labelEl ? labelEl.value.trim() : ''
+        if (!typeEl || !decEl) return;
+
+        valueFormats[vf.field] = {
+          type: typeEl.value,
+          decimals: Number.parseInt(decEl.value, 10) || 0,
+          label: labelEl?.value.trim() || ''
+        };
+      });
+
+      // Hierarchy sorting.
+      const rowSort = {
+        ...(this._config.rowSort || {})
+      };
+
+      (this._config.rowFields || []).forEach(
+        (rowField, index) => {
+          const modeEl = document.getElementById(
+            `row-sort-mode-${index}`
+          );
+
+          const fieldEl = document.getElementById(
+            `row-sort-field-${index}`
+          );
+
+          if (!modeEl) return;
+
+          const mode = modeEl.value;
+          const field = fieldEl?.value || '';
+
+          if (mode.startsWith('field-') && !field) {
+            throw new Error(
+              `Bitte ein Sortierfeld für "${rowField}" auswählen.`
+            );
+          }
+
+          rowSort[rowField] = {
+            mode,
+            ...(mode.startsWith('field-')
+              ? { field }
+              : {})
           };
         }
-      });
+      );
 
-      const rowSort = {
-          ...(existing.rowSort || this._config.rowSort || {})
+        // Includes all current session settings.
+        const updated = {
+          ...this._config,
+
+          theme: getV('theme-select') || 'theme-light',
+          density: getV('density-select') || 'normal',
+          fontSize: getV('fontsize-select') || '12px',
+
+          showZebra: getC('toggle-zebra'),
+          showHGrid: getC('toggle-hgrid'),
+          showVGrid: getC('toggle-vgrid'),
+
+          showSubtotals: getC('toggle-subtotals'),
+          showGrandTotal: getC('toggle-grandtotal'),
+          showRowTotal: getC('toggle-rowtotal'),
+
+          showToolbar: getC('toggle-showtoolbar'),
+          showExportButtons: getC('toggle-showexport'),
+          showStatusBar: getC('toggle-showstatusbar'),
+
+          showDrillThrough: getC('toggle-showdrill'),
+
+          language: getV('language-select') || 'de',
+          numberLocale: getV('number-locale-select') || 'de-DE',
+
+          valueFormats,
+          rowSort,
+
+          cfConfigs: this._config.cfConfigs || {},
+
+          drillThroughParameters: {
+            rowPath: getV('drill-param-rowPath').trim(),
+            columnName: getV('drill-param-columnName').trim()
+          }
         };
 
-        let missingSortField = null;
+        // Never persist dynamically discovered field metadata.
+        delete updated.availableSortFields;
 
-        (this._config.rowFields || existing.rowFields || [])
-          .forEach((rowField, index) => {
-            const modeEl = document.getElementById(
-              `row-sort-mode-${index}`
-            );
+        const settings = tableau.extensions.settings;
+        const previousRaw = settings.get('matrixConfig');
 
-            const fieldEl = document.getElementById(
-              `row-sort-field-${index}`
-            );
+        if (saveBtn) saveBtn.disabled = true;
 
-            if (!modeEl) return;
-
-            const mode = modeEl.value;
-            const field = fieldEl?.value || '';
-
-            if (mode.startsWith('field-') && !field) {
-              missingSortField = rowField;
-            }
-
-            rowSort[rowField] = {
-              mode,
-              ...(mode.startsWith('field-') && field
-                ? { field }
-                : {})
-            };
-          });
-
-        if (missingSortField) {
-          alert(`Bitte ein Sortierfeld für "${missingSortField}" auswählen.`);
-          return;
-        }
-
-      const updated = Object.assign({}, existing, {
-        theme: themeEl ? themeEl.value : 'theme-light',
-        density: densityEl ? densityEl.value : 'normal',
-        fontSize: fontSizeEl ? fontSizeEl.value : '12px',
-        showZebra: zebraEl ? Boolean(zebraEl.checked) : true,
-        rowSort: rowSort,
-        showHGrid: hgridEl ? Boolean(hgridEl.checked) : true,
-        showVGrid: vgridEl ? Boolean(vgridEl.checked) : true,
-        showSubtotals: subtotalsEl ? Boolean(subtotalsEl.checked) : true,
-        showGrandTotal: grandtotalEl ? Boolean(grandtotalEl.checked) : true,
-        showRowTotal: rowtotalEl ? Boolean(rowtotalEl.checked) : true,
-        cfConfigs: this._config.cfConfigs || {},
-        showToolbar: showtoolbarEl ? Boolean(showtoolbarEl.checked) : true,
-        showExportButtons: showexportEl ? Boolean(showexportEl.checked) : true,
-        showStatusBar: showstatusbarEl ? Boolean(showstatusbarEl.checked) : true,
-        language: getV('language-select') || localStorage.getItem('matrixLang') || 'de',
-        numberLocale: getV('number-locale-select') || 'de-DE',
-        valueFormats: valueFormats,
-        showDrillThrough:
-          document.getElementById('toggle-showdrill')?.checked ?? true,
-
-        drillThroughParameters: {
-          rowPath: getV('drill-param-rowPath').trim(),
-          columnName: getV('drill-param-columnName').trim()
-        },
-      });
-
-      const updatedJson = JSON.stringify(updated);
-
-      // 1. Synchronous localStorage update (instant cross-window availability)
-      try { localStorage.setItem('matrixConfig', updatedJson); } catch (e) {}
-
-      // 2. Broadcast message to main window for INSTANT REAL-TIME APPLY (0ms latency)
-      try {
-        if ('BroadcastChannel' in window) {
-          const bc = new BroadcastChannel('matrix_config_channel');
-          bc.postMessage({ type: 'APPLY_CONFIG', config: updated });
-          bc.close();
-        }
-      } catch (bcErr) {
-        console.warn('[ConfigDialog] BroadcastChannel error:', bcErr);
-      }
-
-      // 3. Update Tableau settings (fire-and-forget saveAsync in background)
-      if (typeof tableau !== 'undefined' && tableau.extensions && tableau.extensions.settings) {
         try {
-          tableau.extensions.settings.set('matrixConfig', updatedJson);
-          tableau.extensions.settings.saveAsync().catch(e => console.warn('[ConfigDialog] saveAsync bg warning:', e));
-        } catch (sErr) {
-          console.warn('[ConfigDialog] settings set error:', sErr);
+          settings.set('matrixConfig', JSON.stringify(updated));
+
+          // Persist explicitly in Tableau authoring mode.
+          await settings.saveAsync();
+
+        } catch (err) {
+          // Restore the previous in-memory settings value if saving fails.
+          if (previousRaw !== undefined) {
+            settings.set('matrixConfig', previousRaw);
+          } else {
+            settings.erase('matrixConfig');
+          }
+
+          throw err;
         }
+
+        console.log('[ConfigDialog] Tableau settings saved.');
+
+        // The main extension will reload the saved configuration.
+        tableau.extensions.ui.closeDialog('saved');
+
+      } catch (err) {
+        console.error('[ConfigDialog] Save error:', err);
+
+        alert(
+          'Die Einstellungen konnten nicht gespeichert werden.\n' +
+          (err.message || String(err))
+        );
+
+      } finally {
+        if (saveBtn) saveBtn.disabled = false;
       }
-
-      // 4. Close popup dialog window cleanly
-      if (typeof tableau !== 'undefined' && tableau.extensions && tableau.extensions.ui && typeof tableau.extensions.ui.closeDialog === 'function') {
-        try {
-          tableau.extensions.ui.closeDialog('saved');
-        } catch (cErr) {
-          console.warn('[ConfigDialog] closeDialog error:', cErr);
-        }
-      }
-
-      setTimeout(() => {
-        try { window.close(); } catch(e) {}
-      }, 50);
-
-    } catch (err) {
-      console.error('[ConfigDialog] Save error:', err);
     }
-  }
 
   /**
    * Cancel and close dialog.
