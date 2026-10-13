@@ -236,8 +236,6 @@ class MatrixApp {
         JSON.stringify(availableFields)
       ) {
         this.config.availableSortFields = availableFields;
-
-        await this.connector.saveConfig(this.config);
       }
 
       console.log(
