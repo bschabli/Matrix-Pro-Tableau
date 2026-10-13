@@ -255,7 +255,115 @@ class ConfigDialog {
 
     // Populate dynamic value formatting cards
     this._populateValueFormats();
+    this._populateRowSort();
   }
+
+  _populateRowSort() {
+      const container = document.getElementById('row-sort-container');
+      if (!container) return;
+
+      container.replaceChildren();
+
+      const rowFields = this._config.rowFields || [];
+      const rowSort = this._config.rowSort || {};
+
+      const excluded = new Set([
+        ...rowFields,
+        ...(this._config.colFields || []),
+        ...(this._config.valueFields || []).map(v => v.field)
+      ]);
+
+      const availableFields = [
+        ...new Set(this._config.availableSortFields || [])
+      ].filter(field =>
+        typeof field === 'string' &&
+        !field.startsWith('__') &&
+        !excluded.has(field)
+      ).sort((a, b) => a.localeCompare(b, 'de', { numeric: true }));
+
+      if (!rowFields.length) {
+        container.textContent = 'Keine Hierarchieebenen vorhanden.';
+        return;
+      }
+
+      const modes = [
+        ['original', 'Ursprüngliche Reihenfolge'],
+        ['alpha-asc', 'Alphabetisch A–Z'],
+        ['alpha-desc', 'Alphabetisch Z–A'],
+        ['field-asc', 'Sortierfeld aufsteigend'],
+        ['field-desc', 'Sortierfeld absteigend']
+      ];
+
+      rowFields.forEach((rowField, index) => {
+        const rule = rowSort[rowField] || {};
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'form-row';
+        wrapper.style.cssText =
+          'display:flex;flex-direction:column;align-items:stretch;gap:8px;';
+
+        const title = document.createElement('strong');
+        title.textContent = rowField;
+        wrapper.appendChild(title);
+
+        const modeSelect = document.createElement('select');
+        modeSelect.id = `row-sort-mode-${index}`;
+        modeSelect.className = 'form-select';
+        modeSelect.style.width = '100%';
+
+        modes.forEach(([value, label]) => {
+          const option = document.createElement('option');
+          option.value = value;
+          option.textContent = label;
+          modeSelect.appendChild(option);
+        });
+
+        modeSelect.value = rule.mode || 'original';
+        wrapper.appendChild(modeSelect);
+
+        const fieldSelect = document.createElement('select');
+        fieldSelect.id = `row-sort-field-${index}`;
+        fieldSelect.className = 'form-select';
+        fieldSelect.style.width = '100%';
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Sortierfeld auswählen';
+        fieldSelect.appendChild(placeholder);
+
+        availableFields.forEach(field => {
+          const option = document.createElement('option');
+          option.value = field;
+          option.textContent = field;
+          fieldSelect.appendChild(option);
+        });
+
+        if (rule.field && !availableFields.includes(rule.field)) {
+          const missing = document.createElement('option');
+          missing.value = '';
+          missing.textContent = `${rule.field} (nicht verfügbar)`;
+          missing.disabled = true;
+          fieldSelect.appendChild(missing);
+        }
+
+        fieldSelect.value = availableFields.includes(rule.field)
+          ? rule.field
+          : '';
+
+        const syncVisibility = () => {
+          fieldSelect.style.display =
+            modeSelect.value.startsWith('field-')
+              ? 'block'
+              : 'none';
+        };
+
+        modeSelect.addEventListener('change', syncVisibility);
+        syncVisibility();
+
+        wrapper.appendChild(fieldSelect);
+        container.appendChild(wrapper);
+      });
+    }
 
   /**
    * Dynamically build formatting selectors for each active measure.
@@ -412,11 +520,50 @@ class ConfigDialog {
         }
       });
 
+      const rowSort = {
+          ...(existing.rowSort || this._config.rowSort || {})
+        };
+
+        let missingSortField = null;
+
+        (this._config.rowFields || existing.rowFields || [])
+          .forEach((rowField, index) => {
+            const modeEl = document.getElementById(
+              `row-sort-mode-${index}`
+            );
+
+            const fieldEl = document.getElementById(
+              `row-sort-field-${index}`
+            );
+
+            if (!modeEl) return;
+
+            const mode = modeEl.value;
+            const field = fieldEl?.value || '';
+
+            if (mode.startsWith('field-') && !field) {
+              missingSortField = rowField;
+            }
+
+            rowSort[rowField] = {
+              mode,
+              ...(mode.startsWith('field-') && field
+                ? { field }
+                : {})
+            };
+          });
+
+        if (missingSortField) {
+          alert(`Bitte ein Sortierfeld für "${missingSortField}" auswählen.`);
+          return;
+        }
+
       const updated = Object.assign({}, existing, {
         theme: themeEl ? themeEl.value : 'theme-light',
         density: densityEl ? densityEl.value : 'normal',
         fontSize: fontSizeEl ? fontSizeEl.value : '12px',
         showZebra: zebraEl ? Boolean(zebraEl.checked) : true,
+        rowSort: rowSort,
         showHGrid: hgridEl ? Boolean(hgridEl.checked) : true,
         showVGrid: vgridEl ? Boolean(vgridEl.checked) : true,
         showSubtotals: subtotalsEl ? Boolean(subtotalsEl.checked) : true,

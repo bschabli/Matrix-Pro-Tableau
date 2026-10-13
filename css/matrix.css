@@ -315,12 +315,6 @@ html, body {
   border-right-color: transparent !important;
 }
 
-/* Zebra Striping Modifier */
-.matrix-table.no-zebra tbody tr:nth-child(even) td,
-.matrix-table.no-zebra tbody tr:nth-child(even) td.row-header {
-  background: var(--matrix-row-bg) !important;
-}
-
 /* Row Density Modifiers */
 .matrix-table.density-compact td,
 .matrix-table.density-compact th {
@@ -480,8 +474,13 @@ html, body {
   border-right: none;
 }
 
-/* Alternating rows */
-.matrix-table tbody tr:nth-child(even) td {
+/* Zebra striping for visible data rows */
+
+.matrix-table tbody tr.row-zebra td {
+  background: var(--matrix-row-bg-alt);
+}
+
+.matrix-table tbody tr.row-zebra td.row-header {
   background: var(--matrix-row-bg-alt);
 }
 
@@ -507,11 +506,6 @@ html, body {
   font-weight: 500;
   cursor: default;
   min-width: 180px;
-}
-
-/* Inherit alternating bg on sticky cell */
-.matrix-table tbody tr:nth-child(even) td.row-header {
-  background: var(--matrix-row-bg-alt);
 }
 
 .matrix-table tbody tr:hover td.row-header {

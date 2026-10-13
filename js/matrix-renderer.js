@@ -135,6 +135,7 @@ this._matrixData = matrixData;
     }
 
     this.container.appendChild(table);
+    this._updateZebraRows();
   }
 
   /**
@@ -189,41 +190,9 @@ this._matrixData = matrixData;
         spacerTh.className = 'row-header-spacer';
         spacerTh.rowSpan = numHeaderRows;
 
-        const container = document.createElement('div');
-        container.className = 'spacer-content';
-
-        const labelSpan = document.createElement('span');
-        labelSpan.className = 'spacer-label';
-        labelSpan.textContent = data.config.rowFields.join(' / ') || 'Rows';
-        container.appendChild(labelSpan);
-
-        const btnGroup = document.createElement('div');
-        btnGroup.className = 'corner-controls';
-
-        const expBtn = document.createElement('button');
-        expBtn.className = 'corner-btn';
-        expBtn.title = t('btn_expand_all');
-        expBtn.innerHTML = '⊞';
-        expBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.expandAll();
-        });
-
-        const colBtn = document.createElement('button');
-        colBtn.className = 'corner-btn';
-        colBtn.title = t('btn_collapse_all');
-        colBtn.innerHTML = '⊟';
-        colBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.collapseAll();
-        });
-
-        btnGroup.appendChild(expBtn);
-        btnGroup.appendChild(colBtn);
-        container.appendChild(btnGroup);
-
-        spacerTh.appendChild(container);
+        // Keep column resizing available.
         this._attachResizeHandle(spacerTh, '__row__');
+
         tr.appendChild(spacerTh);
       }
 
@@ -632,7 +601,7 @@ this._matrixData = matrixData;
     }
 
     // Update visibility of descendant rows
-    this._updateChildVisibility(path);
+    this._refreshBody();
 
     // Callback
     if (this.options.onExpandToggle) {
@@ -1143,7 +1112,34 @@ _setColumnWidth(key, width) {
   });
 }
 
+_updateZebraRows() {
+  const rows = this.container.querySelectorAll(
+    '.matrix-table tbody tr'
+  );
 
+  let visibleIndex = 0;
+
+  rows.forEach(row => {
+    row.classList.remove('row-zebra');
+
+    // Ignore hidden rows and subtotal rows.
+    if (
+      row.classList.contains('row-hidden') ||
+      row.classList.contains('subtotal-row')
+    ) {
+      return;
+    }
+
+    if (
+      this.options.showZebra !== false &&
+      visibleIndex % 2 === 1
+    ) {
+      row.classList.add('row-zebra');
+    }
+
+    visibleIndex++;
+  });
+}
 
 _attachResizeHandle(th, key) {
   const handle = document.createElement('span');

@@ -38,6 +38,11 @@ class PivotEngine {
    */
   constructor(config = {}) {
     this.rowFields = config.rowFields || [];
+    this.rowSort = config.rowSort || {};
+    this._rowSortCollator = new Intl.Collator('de', {
+      numeric: true,
+      sensitivity: 'base'
+    });
     this.colFields = config.colFields || [];
     this.showRowTotal = config.showRowTotal !== false;
     this.valueFields = (config.valueFields || []).map(v => ({
@@ -301,7 +306,76 @@ class PivotEngine {
       const field = this.rowFields[level];
       const groups = this._groupBy(records, field);
 
-      return Array.from(groups.entries()).map(([label, groupRecords]) => {
+      // Sorting configuration for this hierarchy level
+      const rule = this.rowSort[field] || {};
+      const mode = rule.mode || 'original';
+
+      const useSortField =
+        (mode === 'field-asc' || mode === 'field-desc') &&
+        Boolean(rule.field);
+
+      // Build sibling groups including their sorting values.
+      const siblings = Array.from(groups.entries()).map(
+        ([label, groupRecords]) => ({
+          label,
+          groupRecords,
+          sortValue: useSortField
+            ? this._getGroupSortValue(groupRecords, rule.field)
+            : null
+        })
+      );
+
+      // Alphabetical sorting
+      if (mode === 'alpha-asc' || mode === 'alpha-desc') {
+        const direction = mode === 'alpha-desc' ? -1 : 1;
+
+        siblings.sort((a, b) =>
+          direction * this._rowSortCollator.compare(
+            String(a.label),
+            String(b.label)
+          )
+        );
+      }
+
+      // Sorting by a separate data field
+      else if (useSortField) {
+        const hasSortValues = siblings.some(
+          item => item.sortValue !== null
+        );
+
+        if (hasSortValues) {
+          const direction = mode === 'field-desc' ? -1 : 1;
+
+          siblings.sort((a, b) => {
+            const aMissing = a.sortValue === null;
+            const bMissing = b.sortValue === null;
+
+            // Missing sort values always go last.
+            if (aMissing && !bMissing) return 1;
+            if (!aMissing && bMissing) return -1;
+
+            if (!aMissing && !bMissing) {
+              const comparison = this._compareGroupSortValues(
+                a.sortValue,
+                b.sortValue
+              );
+
+              if (comparison !== 0) {
+                return direction * comparison;
+              }
+            }
+
+            // Equal sort values: alphabetical tie-breaker.
+            return this._rowSortCollator.compare(
+              String(a.label),
+              String(b.label)
+            );
+          });
+        }
+      }
+
+      // Build the hierarchy recursively, using the sorted groups.
+      return siblings.map(({ label, groupRecords }) => {
         const rowPath = [...parentLabels, String(label)];
 
         return {
@@ -322,6 +396,74 @@ class PivotEngine {
           drillTupleIds: this._getDrillTupleIds(groupRecords)
         };
       });
+    }
+
+    _getGroupSortValue(records, sortField) {
+  let selectedValue = null;
+
+  for (const record of records) {
+    const value = this._getRowValue(record, sortField);
+
+    if (
+      value === null ||
+      value === undefined ||
+      String(value).trim() === ''
+    ) {
+      continue;
+    }
+
+    if (selectedValue === null) {
+      selectedValue = value;
+      continue;
+    }
+
+    // A hierarchy node should have one consistent sorting value.
+    if (String(value).trim() !== String(selectedValue).trim()) {
+      console.warn(
+        '[PivotEngine] Unterschiedliche Sortierwerte innerhalb eines Hierarchieknotens:',
+        {
+          sortField,
+          firstValue: selectedValue,
+          conflictingValue: value
+        }
+      );
+      break;
+    }
+  }
+
+  return selectedValue;
+}
+
+    _compareGroupSortValues(a, b) {
+      const toNumber = value => {
+        if (typeof value === 'number') {
+          return Number.isFinite(value) ? value : null;
+        }
+
+        const text = String(value).trim();
+
+        // Integer or decimal number, including comma decimals.
+        if (!/^[+-]?\d+(?:[.,]\d+)?$/.test(text)) {
+          return null;
+        }
+
+        const number = Number(text.replace(',', '.'));
+        return Number.isFinite(number) ? number : null;
+      };
+
+      const numA = toNumber(a);
+      const numB = toNumber(b);
+
+      // Numeric sort: 1, 2, 10 instead of 1, 10, 2.
+      if (numA !== null && numB !== null) {
+        return numA - numB;
+      }
+
+      // Text or mixed types.
+      return this._rowSortCollator.compare(
+        String(a),
+        String(b)
+      );
     }
 
     _getDrillTupleIds(records) {

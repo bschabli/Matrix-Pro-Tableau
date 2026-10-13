@@ -223,6 +223,28 @@ class MatrixApp {
         return;
       }
 
+      // Available fields from Tableau summary data.
+      // Includes row, column, value and Detail fields.
+      const availableFields = Object.keys(rawData[0])
+        .filter(field => field !== '__tupleId');
+
+      // Keep field catalog available for the configuration dialog.
+      const previousFields = this.config.availableSortFields || [];
+
+      if (
+        JSON.stringify(previousFields) !==
+        JSON.stringify(availableFields)
+      ) {
+        this.config.availableSortFields = availableFields;
+
+        await this.connector.saveConfig(this.config);
+      }
+
+      console.log(
+        '[MatrixApp] Available sort fields:',
+        availableFields
+      );
+
       // Calculate data signature and verify against previous load to prevent loop
       const configStr = JSON.stringify(this.config);
       const isConfigChanged = configStr !== this._lastConfigStr;
@@ -241,6 +263,7 @@ class MatrixApp {
       // 3. Transform flat data → hierarchical matrix
       this.engine = new PivotEngine({
         rowFields: this.config.rowFields || [],
+        rowSort: this.config.rowSort || {},
         colFields: this.config.colFields || [],
         valueFields: (this.config.valueFields || []).map(v => ({
           ...v,
