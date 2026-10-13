@@ -601,7 +601,8 @@ this._matrixData = matrixData;
     }
 
     // Update visibility of descendant rows
-    this._refreshBody();
+    this._updateChildVisibility(path);
+    this._updateZebraRows();
 
     // Callback
     if (this.options.onExpandToggle) {
@@ -725,6 +726,7 @@ this._matrixData = matrixData;
         tr.classList.toggle('row-hidden', !(isExp && parentVis));
       }
     });
+    this._updateZebraRows();
   }
 
   // ──────────────────────────────────────────────────────────────────────────
