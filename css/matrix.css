@@ -1381,3 +1381,20 @@ body.no-export .export-divider,
   outline: 2px solid var(--matrix-accent);
   outline-offset: 1px;
 }
+
+/* Custom Summary Groups */
+
+.matrix-table tbody tr.custom-summary-row td {
+  background: var(--matrix-grandtotal-bg) !important;
+  font-weight: 700;
+  border-top: 2px solid var(--matrix-accent);
+}
+
+.matrix-table tbody tr.custom-summary-row td.row-header {
+  background: var(--matrix-grandtotal-bg) !important;
+  box-shadow: inset 3px 0 0 var(--matrix-accent);
+}
+
+.matrix-table tbody tr.custom-summary-row:hover td {
+  background: var(--matrix-header-bg-hover) !important;
+}

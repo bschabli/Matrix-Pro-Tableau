@@ -39,6 +39,7 @@ class PivotEngine {
   constructor(config = {}) {
     this.rowFields = config.rowFields || [];
     this.rowSort = config.rowSort || {};
+    this.summaryGroups = config.summaryGroups || [];
     this._rowSortCollator = new Intl.Collator('de', {
       numeric: true,
       sensitivity: 'base'
@@ -62,40 +63,129 @@ class PivotEngine {
    * @returns {MatrixData}
    */
   process(flatData) {
-    if (!flatData || flatData.length === 0) {
-      return this._emptyResult();
+      if (!flatData || flatData.length === 0) {
+        return this._emptyResult();
+      }
+
+      const {
+        columnHeaders,
+        flatColumns,
+        colCombinations
+      } = this._buildColumns(flatData);
+
+      const headerRows = this._buildHeaderRows(flatColumns);
+
+      // Existing hierarchy remains unchanged.
+      const rowTree = this._buildRowTree(
+        flatData,
+        0,
+        colCombinations
+      );
+
+      // Calculate additional summary rows separately.
+      const summaryGroups = this._computeSummaryGroups(
+        flatData,
+        colCombinations
+      );
+
+      const grandTotals = this._computeValues(
+        flatData,
+        colCombinations
+      );
+
+      const valueRanges = this._computeValueRanges(
+        rowTree,
+        flatColumns
+      );
+
+      return {
+        columnHeaders,
+        flatColumns,
+        headerRows,
+        rowTree,
+        summaryGroups,
+        grandTotals,
+        valueRanges,
+        config: {
+          rowFields: this.rowFields,
+          colFields: this.colFields,
+          valueFields: this.valueFields
+        }
+      };
     }
 
-    // 1. Build column structure
-    const { columnHeaders, flatColumns, colCombinations } = this._buildColumns(flatData);
-
-    // 2. Build pre-computed header rows for the renderer
-    const headerRows = this._buildHeaderRows(flatColumns);
-
-    // 3. Build hierarchical row tree with aggregated values
-    const rowTree = this._buildRowTree(flatData, 0, colCombinations);
-
-    // 4. Compute grand totals
-    const grandTotals = this._computeValues(flatData, colCombinations);
-
-    // 5. Compute value ranges for conditional formatting
-    const valueRanges = this._computeValueRanges(rowTree, flatColumns);
-
-    return {
-      columnHeaders,
-      flatColumns,
-      headerRows,
-      rowTree,
-      grandTotals,
-      valueRanges,
-      config: {
-        rowFields: this.rowFields,
-        colFields: this.colFields,
-        valueFields: this.valueFields
+  _computeSummaryGroups(records, colCombinations) {
+      if (
+        !this.rowFields.length ||
+        !this.summaryGroups.length
+      ) {
+        return [];
       }
-    };
-  }
 
+      // Use the same grouping logic as the existing hierarchy.
+      const grouped = this._groupBy(
+        records,
+        this.rowFields[0]
+      );
+
+      const results = [];
+
+      for (const definition of this.summaryGroups) {
+        if (!definition || !Array.isArray(definition.members)) {
+          continue;
+        }
+
+        const label = String(definition.label || '').trim();
+
+        const members = [
+          ...new Set(definition.members.map(String))
+        ];
+
+        if (!label || !members.length) continue;
+
+        // Only positions still available after Tableau filtering.
+        const presentMembers = members.filter(
+          member => grouped.has(member)
+        );
+
+        // No contributing positions: hide the summary row.
+        if (!presentMembers.length) continue;
+
+        // Strict mode: all configured positions must exist.
+        if (
+          definition.missingMode === 'complete' &&
+          presentMembers.length !== members.length
+        ) {
+          continue;
+        }
+
+        // Collect underlying records, not pre-aggregated values.
+        const selectedRecords = [];
+
+        for (const member of presentMembers) {
+          for (const record of grouped.get(member)) {
+            selectedRecords.push(record);
+          }
+        }
+
+        results.push({
+          id: definition.id,
+          label,
+          position: definition.position || 'end',
+          missingMode: definition.missingMode || 'partial',
+          presentCount: presentMembers.length,
+          memberCount: members.length,
+
+          // Reuse existing aggregation for every measure and column.
+          values: this._computeValues(
+            selectedRecords,
+            colCombinations
+          )
+        });
+      }
+
+      return results;
+    }  
   // ──────────────────────────────────────────────────────────────────────────
   // Column Structure
   // ──────────────────────────────────────────────────────────────────────────

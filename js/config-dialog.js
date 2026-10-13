@@ -34,6 +34,7 @@ class ConfigDialog {
     };
     this._availableSortFields = [];
     this._currentCfField = null;
+    this._availableSummaryMembers = [];
   }
 
   /**
@@ -79,6 +80,11 @@ class ConfigDialog {
         this._availableSortFields =
           Array.isArray(context.availableFields)
             ? context.availableFields
+            : [];
+
+        this._availableSummaryMembers =
+          Array.isArray(context.availableSummaryMembers)
+            ? context.availableSummaryMembers
             : [];
 
       } catch (err) {
@@ -271,6 +277,7 @@ class ConfigDialog {
     // Populate dynamic value formatting cards
     this._populateValueFormats();
     this._populateRowSort();
+    this._populateSummaryGroups();
   }
 
   _populateRowSort() {
@@ -380,6 +387,264 @@ class ConfigDialog {
       });
     }
 
+  _populateSummaryGroups() {
+      const container = document.getElementById(
+        'summary-groups-container'
+      );
+
+      if (!container) return;
+
+      container.replaceChildren();
+
+      if (!Array.isArray(this._config.summaryGroups)) {
+        this._config.summaryGroups = [];
+      }
+
+      const groups = this._config.summaryGroups;
+
+      const available = [
+        ...new Set(
+          this._availableSummaryMembers.map(String)
+        )
+      ];
+
+      const createLabel = text => {
+        const label = document.createElement('label');
+        label.className = 'form-label';
+        label.textContent = text;
+        label.style.display = 'block';
+        label.style.margin = '10px 0 5px';
+        return label;
+      };
+
+      const addOption = (select, value, label) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        select.appendChild(option);
+      };
+
+      groups.forEach((group, index) => {
+        const card = document.createElement('div');
+
+        card.style.cssText = `
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          padding: 10px;
+          margin-bottom: 12px;
+        `;
+
+        // Name der Summenzeile
+        card.appendChild(createLabel('Bezeichnung'));
+
+        const nameInput = document.createElement('input');
+        nameInput.className = 'form-input';
+        nameInput.style.width = '100%';
+        nameInput.style.boxSizing = 'border-box';
+        nameInput.value = group.label || '';
+        nameInput.placeholder = 'z. B. Rohergebnis';
+
+        nameInput.addEventListener('input', () => {
+          group.label = nameInput.value;
+        });
+
+        card.appendChild(nameInput);
+
+        // Positionen der obersten Hierarchieebene
+        card.appendChild(
+          createLabel('Einbezogene Hierarchiepositionen')
+        );
+
+        const memberBox = document.createElement('div');
+
+        memberBox.style.cssText = `
+          max-height: 150px;
+          overflow-y: auto;
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
+          padding: 6px;
+        `;
+
+        const members = [
+          ...new Set([
+            ...available,
+            ...(group.members || [])
+          ])
+        ];
+
+        members.forEach(member => {
+          const row = document.createElement('label');
+
+          row.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 4px 0;
+            font-size: 12px;
+            cursor: pointer;
+          `;
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+
+          checkbox.checked =
+            (group.members || []).includes(member);
+
+          checkbox.addEventListener('change', () => {
+            const selected = new Set(group.members || []);
+
+            if (checkbox.checked) {
+              selected.add(member);
+            } else {
+              selected.delete(member);
+            }
+
+            group.members = [...selected];
+          });
+
+          const label = document.createElement('span');
+          label.textContent = available.includes(member)
+            ? member
+            : `${member} (aktuell nicht vorhanden)`;
+
+          row.append(checkbox, label);
+          memberBox.appendChild(row);
+        });
+
+        if (members.length === 0) {
+          const message = document.createElement('span');
+          message.textContent =
+            'Keine Hierarchiepositionen verfügbar.';
+          message.style.fontSize = '12px';
+          memberBox.appendChild(message);
+        }
+
+        card.appendChild(memberBox);
+
+        // Position der Summenzeile
+        card.appendChild(
+          createLabel('Position der Summenzeile')
+        );
+
+        const positionSelect = document.createElement('select');
+        positionSelect.className = 'form-select';
+        positionSelect.style.width = '100%';
+
+        addOption(
+          positionSelect,
+          'end',
+          'Am Ende der obersten Ebene'
+        );
+
+        addOption(
+          positionSelect,
+          'start',
+          'Am Anfang der obersten Ebene'
+        );
+
+        const savedAnchor =
+          (group.position || '').startsWith('after:')
+            ? group.position.slice(6)
+            : null;
+
+        const anchors = [
+          ...new Set([
+            ...available,
+            ...(savedAnchor ? [savedAnchor] : [])
+          ])
+        ];
+
+        anchors.forEach(member => {
+          const suffix = available.includes(member)
+            ? ''
+            : ' (aktuell nicht vorhanden)';
+
+          addOption(
+            positionSelect,
+            `after:${member}`,
+            `Nach: ${member}${suffix}`
+          );
+        });
+
+        positionSelect.value = group.position || 'end';
+
+        positionSelect.addEventListener('change', () => {
+          group.position = positionSelect.value;
+        });
+
+        card.appendChild(positionSelect);
+
+        // Filterverhalten
+        card.appendChild(
+          createLabel('Verhalten bei fehlenden Positionen')
+        );
+
+        const modeSelect = document.createElement('select');
+        modeSelect.className = 'form-select';
+        modeSelect.style.width = '100%';
+
+        addOption(
+          modeSelect,
+          'partial',
+          'Vorhandene Positionen summieren'
+        );
+
+        addOption(
+          modeSelect,
+          'complete',
+          'Nur vollständig berechnen'
+        );
+
+        modeSelect.value = group.missingMode || 'partial';
+
+        modeSelect.addEventListener('change', () => {
+          group.missingMode = modeSelect.value;
+        });
+
+        card.appendChild(modeSelect);
+
+        // Gruppe entfernen
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'btn-secondary';
+        removeButton.textContent = 'Summenzeile entfernen';
+        removeButton.style.marginTop = '12px';
+
+        removeButton.addEventListener('click', () => {
+          groups.splice(index, 1);
+          this._populateSummaryGroups();
+        });
+
+        card.appendChild(removeButton);
+        container.appendChild(card);
+      });
+
+      // Neue Gruppe hinzufügen
+      const addButton = document.createElement('button');
+      addButton.type = 'button';
+      addButton.className = 'btn-secondary';
+      addButton.textContent = '+ Summenzeile hinzufügen';
+
+      addButton.disabled =
+        available.length === 0 ||
+        !(this._config.rowFields || []).length;
+
+      addButton.addEventListener('click', () => {
+        groups.push({
+          id: `sg_${Date.now()}_${Math.random()
+            .toString(36).slice(2, 8)}`,
+          label: '',
+          members: [],
+          position: 'end',
+          missingMode: 'partial'
+        });
+
+        this._populateSummaryGroups();
+      });
+
+      container.appendChild(addButton);
+    }  
+  
   /**
    * Dynamically build formatting selectors for each active measure.
    * @private
@@ -562,6 +827,23 @@ class ConfigDialog {
           };
         }
       );
+
+      // Validate custom summary groups before saving.
+      for (const group of this._config.summaryGroups || []) {
+        group.label = (group.label || '').trim();
+
+        if (!group.label) {
+          throw new Error(
+            'Bitte für jede Summenzeile eine Bezeichnung eingeben.'
+          );
+        }
+
+        if (!group.members || group.members.length === 0) {
+          throw new Error(
+            `Bitte mindestens eine Position für "${group.label}" auswählen.`
+          );
+        }
+      }
 
         // Includes all current session settings.
         const updated = {

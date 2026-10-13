@@ -243,10 +243,122 @@ this._matrixData = matrixData;
    * @private
    */
   _buildTbody(data) {
-    const tbody = document.createElement('tbody');
-    this._renderNodes(data.rowTree, '', tbody, data.flatColumns, data);
-    return tbody;
-  }
+      const tbody = document.createElement('tbody');
+
+      // Render the original hierarchy without modifications.
+      this._renderNodes(
+        data.rowTree,
+        '',
+        tbody,
+        data.flatColumns,
+        data
+      );
+
+      // Locate top-level rows in their current sort order.
+      const rootRows = Array.from(
+        tbody.querySelectorAll(
+          'tr[data-path][data-level="0"]'
+        )
+      );
+
+      const rowTree = data.rowTree || [];
+
+      for (const group of data.summaryGroups || []) {
+        const position = group.position || 'end';
+
+        let insertBefore = null;
+
+        if (position === 'start') {
+          insertBefore = rootRows[0] || null;
+        } else if (position.startsWith('after:')) {
+          const anchorLabel = position.slice(6);
+
+          const anchorIndex = rowTree.findIndex(
+            node => String(node.label) === anchorLabel
+          );
+
+          if (anchorIndex >= 0) {
+            insertBefore = rootRows[anchorIndex + 1] || null;
+          }
+        }
+
+        const summaryRow = this._createSummaryGroupRow(
+          group,
+          data.flatColumns
+        );
+
+        // Missing anchor: append to the end.
+        tbody.insertBefore(summaryRow, insertBefore);
+      }
+
+      return tbody;
+        }
+
+      _createSummaryGroupRow(group, flatColumns) {
+      const tr = document.createElement('tr');
+
+      tr.className = 'custom-summary-row';
+      tr.dataset.summaryGroupId = group.id || '';
+
+      tr.setAttribute('role', 'row');
+      tr.setAttribute('aria-level', '1');
+
+      // Row header
+      const tdHeader = document.createElement('td');
+      tdHeader.className = 'row-header';
+
+      const headerContent = document.createElement('div');
+      headerContent.className = 'row-header-content';
+
+      const placeholder = document.createElement('span');
+      placeholder.className = 'expand-btn-placeholder';
+      headerContent.appendChild(placeholder);
+
+      const label = document.createElement('span');
+      label.className = 'row-label';
+      label.textContent = group.label;
+
+      // Explain partially calculated totals.
+      if (group.presentCount < group.memberCount) {
+        label.title =
+          `${group.presentCount} von ${group.memberCount} ` +
+          'Positionen berücksichtigt';
+      }
+
+      headerContent.appendChild(label);
+      tdHeader.appendChild(headerContent);
+      tr.appendChild(tdHeader);
+
+      // Value cells
+      flatColumns.forEach(col => {
+        const td = document.createElement('td');
+        td.className = 'value-cell';
+
+        if (col.isTotal) {
+          td.classList.add('col-total');
+        }
+
+        const value = group.values?.[col.valueKey]?.[
+          col.measure.field
+        ];
+
+        if (value != null && Number.isFinite(value)) {
+          td.textContent = this._formatNumber(
+            value,
+            col.measure.field
+          );
+
+          td.dataset.value = value;
+        } else {
+          td.textContent = '–';
+          td.classList.add('value-null');
+        }
+
+        tr.appendChild(td);
+      });
+
+      return tr;
+    }
 
   /**
    * Recursively render row nodes into the tbody.
@@ -1124,10 +1236,11 @@ _updateZebraRows() {
   rows.forEach(row => {
     row.classList.remove('row-zebra');
 
-    // Ignore hidden rows and subtotal rows.
+    // Only ordinary visible hierarchy rows count.
     if (
       row.classList.contains('row-hidden') ||
-      row.classList.contains('subtotal-row')
+      row.classList.contains('subtotal-row') ||
+      row.classList.contains('custom-summary-row')
     ) {
       return;
     }

@@ -258,6 +258,7 @@ class MatrixApp {
       this.engine = new PivotEngine({
         rowFields: this.config.rowFields || [],
         rowSort: this.config.rowSort || {},
+        summaryGroups: this.config.summaryGroups || [],
         colFields: this.config.colFields || [],
         valueFields: (this.config.valueFields || []).map(v => ({
           ...v,
@@ -427,7 +428,12 @@ class MatrixApp {
           configUrl,
           {
             config: this.config,
-            availableFields
+            availableFields,
+
+            // Bereits vorhandene oberste Hierarchieebene verwenden.
+            availableSummaryMembers: (
+              this._matrixData?.rowTree || []
+            ).map(node => String(node.label))
           }
         );
 
