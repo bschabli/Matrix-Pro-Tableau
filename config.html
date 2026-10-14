@@ -322,6 +322,117 @@
       background: #f9fafb;
       border-color: #9ca3af;
     }
+
+    /* ==========================================================
+      Toolbar & Status Bar Configuration
+      ========================================================== */
+
+    .bar-settings {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-top: 8px;
+    }
+
+    .bar-settings-section + .bar-settings-section {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 15px;
+    }
+
+    .bar-settings-heading {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    .bar-settings .form-row {
+      min-height: 36px;
+      padding: 7px 0;
+      border-bottom: none;
+    }
+
+    /* Title field */
+
+    .bar-settings-title-row {
+      margin-top: 4px;
+    }
+
+    .bar-settings-title-row .form-select {
+      width: 100%;
+      cursor: text;
+    }
+
+    /* Color configuration */
+
+    #bar-colors-panel {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .bar-color-card {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 7px;
+      padding: 11px 12px;
+    }
+
+    .bar-color-card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 10px;
+    }
+
+    .bar-color-card-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .bar-color-field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 6px 9px;
+      font-size: 11px;
+      color: #4b5563;
+      cursor: pointer;
+    }
+
+    .bar-color-field:hover {
+      border-color: #93c5fd;
+    }
+
+    .bar-color-field input[type="color"] {
+      width: 38px;
+      height: 28px;
+      min-width: 38px;
+      padding: 2px;
+      border: 1px solid #d1d5db;
+      border-radius: 5px;
+      background: #ffffff;
+      cursor: pointer;
+    }
+
+    .bar-color-field input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    .bar-color-field input[type="color"]::-webkit-color-swatch {
+      border: none;
+      border-radius: 3px;
+    }
+
+
   </style>
 </head>
 <body>
@@ -659,157 +770,277 @@
       </div>
     </div>
 
-    <!-- Card 6: Barra de Herramientas y Pie de Página -->
+    <!-- Card 6: Toolbar & Status Bar -->
     <div class="accordion-item">
+
       <div class="accordion-header">
         <div class="accordion-title">
           <div class="accordion-icon">🛠️</div>
-          <span data-i18n="card_toolbar">Barra de Herramientas y Pie de Página</span>
+          <span data-i18n="card_toolbar">
+            Symbolleiste & Statusleiste
+          </span>
         </div>
         <span class="accordion-chevron">▲</span>
       </div>
+
       <div class="accordion-content">
-        <div class="form-row">
-          <div class="form-label-group">
-            <span class="form-label" data-i18n="label_show_toolbar">Mostrar barra superior de herramientas</span>
-            <span class="form-desc" data-i18n="desc_show_toolbar">Barra azul con título y acciones</span>
-          </div>
-          <div class="toggle-wrap">
-            <label class="toggle"><input type="checkbox" id="toggle-showtoolbar" checked /><span class="slider"></span></label>
-          </div>
+
+        <div class="bar-settings">
+
+          <!-- ============================================
+              Section 1: Visibility
+              ============================================ -->
+          <section class="bar-settings-section">
+
+            <div class="bar-settings-heading">
+              Sichtbarkeit
+            </div>
+
+            <div class="form-row">
+              <div class="form-label-group">
+                <span
+                  class="form-label"
+                  data-i18n="label_show_toolbar"
+                >
+                  Symbolleiste anzeigen
+                </span>
+              </div>
+
+              <div class="toggle-wrap">
+                <label class="toggle">
+                  <input
+                    type="checkbox"
+                    id="toggle-showtoolbar"
+                    checked
+                  >
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-label-group">
+                <span
+                  class="form-label"
+                  data-i18n="label_show_export"
+                >
+                  Exportbuttons anzeigen
+                </span>
+              </div>
+
+              <div class="toggle-wrap">
+                <label class="toggle">
+                  <input
+                    type="checkbox"
+                    id="toggle-showexport"
+                    checked
+                  >
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-label-group">
+                <span
+                  class="form-label"
+                  data-i18n="label_show_statusbar"
+                >
+                  Statusleiste anzeigen
+                </span>
+              </div>
+
+              <div class="toggle-wrap">
+                <label class="toggle">
+                  <input
+                    type="checkbox"
+                    id="toggle-showstatusbar"
+                    checked
+                  >
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+          </section>
+
+
+          <!-- ============================================
+              Section 2: Title
+              ============================================ -->
+          <section class="bar-settings-section">
+
+            <div class="bar-settings-heading">
+              Beschriftung
+            </div>
+
+            <div class="form-row">
+              <div class="form-label-group">
+                <span class="form-label">
+                  Titel anzeigen
+                </span>
+              </div>
+
+              <div class="toggle-wrap">
+                <label class="toggle">
+                  <input
+                    type="checkbox"
+                    id="toggle-showtitle"
+                    checked
+                  >
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="bar-settings-title-row">
+              <input
+                type="text"
+                id="toolbar-title-input"
+                class="form-select"
+                value="Matrix Pro"
+                placeholder="Titel der Symbolleiste"
+              >
+            </div>
+
+          </section>
+
+
+          <!-- ============================================
+              Section 3: Custom Colors
+              ============================================ -->
+          <section class="bar-settings-section">
+
+            <div class="bar-settings-heading">
+              Farbgestaltung
+            </div>
+
+            <div class="form-row">
+              <div class="form-label-group">
+                <span class="form-label">
+                  Eigene Farben verwenden
+                </span>
+                <span class="form-desc">
+                  Theme-Farben überschreiben
+                </span>
+              </div>
+
+              <div class="toggle-wrap">
+                <label class="toggle">
+                  <input
+                    type="checkbox"
+                    id="toggle-custom-bar-colors"
+                  >
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div
+              id="bar-colors-panel"
+              style="display:none;"
+            >
+
+              <!-- Toolbar colors -->
+              <div class="bar-color-card">
+
+                <div class="bar-color-card-title">
+                  Symbolleiste
+                </div>
+
+                <div class="bar-color-card-fields">
+
+                  <label class="bar-color-field">
+                    <span>Hintergrund</span>
+                    <input
+                      type="color"
+                      id="color-toolbar-bg"
+                      value="#0078d4"
+                    >
+                  </label>
+
+                  <label class="bar-color-field">
+                    <span>Text</span>
+                    <input
+                      type="color"
+                      id="color-toolbar-text"
+                      value="#ffffff"
+                    >
+                  </label>
+
+                </div>
+              </div>
+
+
+              <!-- Export button colors -->
+              <div class="bar-color-card">
+
+                <div class="bar-color-card-title">
+                  Exportbuttons
+                </div>
+
+                <div class="bar-color-card-fields">
+
+                  <label class="bar-color-field">
+                    <span>Hintergrund</span>
+                    <input
+                      type="color"
+                      id="color-export-bg"
+                      value="#2563eb"
+                    >
+                  </label>
+
+                  <label class="bar-color-field">
+                    <span>Text</span>
+                    <input
+                      type="color"
+                      id="color-export-text"
+                      value="#ffffff"
+                    >
+                  </label>
+
+                </div>
+              </div>
+
+
+              <!-- Status bar colors -->
+              <div class="bar-color-card">
+
+                <div class="bar-color-card-title">
+                  Statusleiste
+                </div>
+
+                <div class="bar-color-card-fields">
+
+                  <label class="bar-color-field">
+                    <span>Hintergrund</span>
+                    <input
+                      type="color"
+                      id="color-status-bg"
+                      value="#0078d4"
+                    >
+                  </label>
+
+                  <label class="bar-color-field">
+                    <span>Text</span>
+                    <input
+                      type="color"
+                      id="color-status-text"
+                      value="#ffffff"
+                    >
+                  </label>
+
+                </div>
+              </div>
+
+            </div>
+
+          </section>
+
         </div>
-        <div class="form-row">
-          <div class="form-label-group">
-            <span class="form-label" data-i18n="label_show_export">Mostrar botones de exportación (Excel / CSV)</span>
-            <span class="form-desc" data-i18n="desc_show_export">Habilitar descarga de datos</span>
-          </div>
-          <div class="toggle-wrap">
-            <label class="toggle"><input type="checkbox" id="toggle-showexport" checked /><span class="slider"></span></label>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-label-group">
-            <span class="form-label" data-i18n="label_show_statusbar">Mostrar pie de página de estado</span>
-            <span class="form-desc" data-i18n="desc_show_statusbar">Barra inferior con información de hoja</span>
-          </div>
-          <div class="toggle-wrap">
-            <label class="toggle"><input type="checkbox" id="toggle-showstatusbar" checked /><span class="slider"></span></label>
-          </div>
-        <!-- Custom Toolbar Title -->
-          <div class="form-row">
-            <div class="form-label-group">
-              <span class="form-label">Titel anzeigen</span>
-              <span class="form-desc">
-                Überschrift in der Symbolleiste ein- oder ausblenden
-              </span>
-            </div>
-            <div class="toggle-wrap">
-              <label class="toggle">
-                <input type="checkbox" id="toggle-showtitle" checked>
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
 
-          <div class="form-row">
-            <div class="form-label-group">
-              <span class="form-label">Titeltext</span>
-            </div>
-            <input
-              type="text"
-              id="toolbar-title-input"
-              class="form-select"
-              style="width:190px;cursor:text;"
-              value="Matrix Pro"
-            >
-          </div>
-
-          <!-- Custom Toolbar and Status Colors -->
-          <div class="form-row">
-            <div class="form-label-group">
-              <span class="form-label">Eigene Farben verwenden</span>
-              <span class="form-desc">
-                Individuelle Farben statt der Theme-Vorgaben
-              </span>
-            </div>
-            <div class="toggle-wrap">
-              <label class="toggle">
-                <input type="checkbox" id="toggle-custom-bar-colors">
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <div
-            id="bar-colors-panel"
-            style="
-              display:none;
-              grid-template-columns:1fr auto;
-              align-items:center;
-              gap:10px;
-              padding:12px;
-              font-size:12px;
-            "
-          >
-            <label for="color-toolbar-bg">
-              Symbolleiste: Hintergrund
-            </label>
-            <input
-              type="color"
-              id="color-toolbar-bg"
-              value="#0078d4"
-            >
-
-            <label for="color-toolbar-text">
-              Symbolleiste: Text
-            </label>
-            <input
-              type="color"
-              id="color-toolbar-text"
-              value="#ffffff"
-            >
-
-            <label for="color-export-bg">
-              Exportbuttons: Hintergrund
-            </label>
-            <input
-              type="color"
-              id="color-export-bg"
-              value="#2563eb"
-            >
-
-            <label for="color-export-text">
-              Exportbuttons: Text
-            </label>
-            <input
-              type="color"
-              id="color-export-text"
-              value="#ffffff"
-            >
-
-            <label for="color-status-bg">
-              Statusleiste: Hintergrund
-            </label>
-            <input
-              type="color"
-              id="color-status-bg"
-              value="#0078d4"
-            >
-
-            <label for="color-status-text">
-              Statusleiste: Text
-            </label>
-            <input
-              type="color"
-              id="color-status-text"
-              value="#ffffff"
-            >
-          </div>
-        </div>
       </div>
     </div>
-
-
 
     <!-- Drill-through Settings -->
     <div class="accordion-item">
