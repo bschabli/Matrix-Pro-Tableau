@@ -1076,15 +1076,18 @@ this._matrixData = matrixData;
   }
 
   /**
-   * Check if a path is visible (all ancestors are expanded).
+   * Check whether a hierarchy path is expanded
+   * and all its ancestors are expanded.
    * @private
    */
   _isPathVisible(path) {
-    if (!path) return true; // root is always visible
-    const parentPath = this._getParentPath(path);
-    return this._expandedPaths.has(path) !== undefined &&
-           this._isAncestorsExpanded(path);
-  }
+      if (!path) return true;
+
+      return (
+        this._expandedPaths.has(path) &&
+        this._isAncestorsExpanded(path)
+      );
+    }
 
   /**
    * Check that every ancestor of a path is expanded.
