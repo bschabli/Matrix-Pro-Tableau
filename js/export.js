@@ -22,49 +22,6 @@ class ExportManager {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Excel Export
-  // ──────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Export matrix data to an Excel (.xlsx) file and trigger download.
-   * @param {MatrixData} matrixData - Output from PivotEngine
-   * @param {string} [filename='Matrix_Export'] - Filename without extension
-   */
-  exportToExcel(matrixData, filename = 'Matrix_Export') {
-    if (typeof XLSX === 'undefined') {
-      console.error('[ExportManager] SheetJS (XLSX) library not loaded.');
-      alert('Export library not available. Please check your internet connection.');
-      return;
-    }
-
-    try {
-      const { rows2D, merges } = this._buildExcelData(matrixData);
-
-      // Create workbook and worksheet
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet(rows2D);
-
-      // Apply merges for multi-level column headers
-      if (merges.length > 0) {
-        ws['!merges'] = merges;
-      }
-
-      // Set column widths
-      const colWidths = this._computeColumnWidths(rows2D);
-      ws['!cols'] = colWidths;
-
-      XLSX.utils.book_append_sheet(wb, ws, 'Matrix');
-
-      // Trigger download
-      XLSX.writeFile(wb, `${filename}.xlsx`);
-      console.log('[ExportManager] Excel file exported:', filename);
-    } catch (err) {
-      console.error('[ExportManager] Excel export failed:', err);
-      alert('Export failed: ' + err.message);
-    }
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
   // CSV Export
   // ──────────────────────────────────────────────────────────────────────────
 

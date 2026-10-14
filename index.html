@@ -6,25 +6,8 @@
   <title>Matrix Pro — Tableau Extension</title>
   <meta name="description" content="Hierarchical Matrix visual extension for Tableau dashboards with multi-level grouping, drill-down, and cross-filtering.">
 
-  <!-- ═══════════════════════════════════════════════════════════════════════
-       External Libraries (CDN — Network-Enabled Extension)
-       ═══════════════════════════════════════════════════════════════════════ -->
-
-  <!-- Tableau Extensions API (local copy preferred, CDN fallback) -->
+  <!-- Tableau Extensions API: local copy only -->
   <script src="js/tableau.extensions.1.latest.min.js"></script>
-  <script>
-    if (typeof tableau === 'undefined') {
-      document.write('<script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api@main/lib/tableau.extensions.1.latest.js"><\/script>');
-    }
-  </script>
-
-  <!-- SheetJS for Excel export -->
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-
-  <!-- Google Fonts: Inter (modern typography) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- ═══════════════════════════════════════════════════════════════════════
        Application Styles
@@ -32,11 +15,9 @@
   <link rel="stylesheet" href="css/matrix.css">
 
   <style>
-    /* Override font-family with Inter from Google Fonts */
     :root {
-      --matrix-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --matrix-font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
-
     /* Overlay container for loading/welcome/error screens */
     #overlay {
       position: absolute;
@@ -81,9 +62,6 @@
       <span class="toolbar-divider export-divider"></span>
 
       <div class="toolbar-group" id="export-group">
-        <button class="toolbar-btn" id="btn-export-excel" title="Export to Excel (.xlsx)">
-          <span class="btn-icon">📥</span> <span data-i18n="btn_export_excel">Export Excel</span>
-        </button>
         <button class="toolbar-btn" id="btn-export-csv" title="Export to CSV">
           <span class="btn-icon">📄</span> <span data-i18n="btn_export_csv">Export CSV</span>
         </button>

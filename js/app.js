@@ -772,19 +772,6 @@ class MatrixApp {
       });
     }
 
-    // Export Excel
-    const excelBtn = document.getElementById('btn-export-excel');
-    if (excelBtn) {
-      excelBtn.addEventListener('click', () => {
-        if (this._matrixData) {
-          this.exporter.exportToExcel(
-            this._getVisibleMatrixData(),
-            'Matrix_Pro_Export'
-          );
-        }
-      });
-    }
-
     // Export CSV
     const csvBtn = document.getElementById('btn-export-csv');
     if (csvBtn) {
