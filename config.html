@@ -695,9 +695,121 @@
           <div class="toggle-wrap">
             <label class="toggle"><input type="checkbox" id="toggle-showstatusbar" checked /><span class="slider"></span></label>
           </div>
+        <!-- Custom Toolbar Title -->
+          <div class="form-row">
+            <div class="form-label-group">
+              <span class="form-label">Titel anzeigen</span>
+              <span class="form-desc">
+                Überschrift in der Symbolleiste ein- oder ausblenden
+              </span>
+            </div>
+            <div class="toggle-wrap">
+              <label class="toggle">
+                <input type="checkbox" id="toggle-showtitle" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-label-group">
+              <span class="form-label">Titeltext</span>
+            </div>
+            <input
+              type="text"
+              id="toolbar-title-input"
+              class="form-select"
+              style="width:190px;cursor:text;"
+              value="Matrix Pro"
+            >
+          </div>
+
+          <!-- Custom Toolbar and Status Colors -->
+          <div class="form-row">
+            <div class="form-label-group">
+              <span class="form-label">Eigene Farben verwenden</span>
+              <span class="form-desc">
+                Individuelle Farben statt der Theme-Vorgaben
+              </span>
+            </div>
+            <div class="toggle-wrap">
+              <label class="toggle">
+                <input type="checkbox" id="toggle-custom-bar-colors">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div
+            id="bar-colors-panel"
+            style="
+              display:none;
+              grid-template-columns:1fr auto;
+              align-items:center;
+              gap:10px;
+              padding:12px;
+              font-size:12px;
+            "
+          >
+            <label for="color-toolbar-bg">
+              Symbolleiste: Hintergrund
+            </label>
+            <input
+              type="color"
+              id="color-toolbar-bg"
+              value="#0078d4"
+            >
+
+            <label for="color-toolbar-text">
+              Symbolleiste: Text
+            </label>
+            <input
+              type="color"
+              id="color-toolbar-text"
+              value="#ffffff"
+            >
+
+            <label for="color-export-bg">
+              Exportbuttons: Hintergrund
+            </label>
+            <input
+              type="color"
+              id="color-export-bg"
+              value="#2563eb"
+            >
+
+            <label for="color-export-text">
+              Exportbuttons: Text
+            </label>
+            <input
+              type="color"
+              id="color-export-text"
+              value="#ffffff"
+            >
+
+            <label for="color-status-bg">
+              Statusleiste: Hintergrund
+            </label>
+            <input
+              type="color"
+              id="color-status-bg"
+              value="#0078d4"
+            >
+
+            <label for="color-status-text">
+              Statusleiste: Text
+            </label>
+            <input
+              type="color"
+              id="color-status-text"
+              value="#ffffff"
+            >
+          </div>
         </div>
       </div>
     </div>
+
+
 
     <!-- Drill-through Settings -->
     <div class="accordion-item">

@@ -1398,3 +1398,38 @@ body.no-export .export-divider,
 .matrix-table tbody tr.custom-summary-row:hover td {
   background: var(--matrix-header-bg-hover) !important;
 }
+
+/* ==========================================================
+   Custom Toolbar Design
+   ========================================================== */
+
+/* Right-align controls when the toolbar title is hidden */
+
+.toolbar.toolbar-no-title {
+  justify-content: flex-end;
+}
+
+/* Custom export button colors */
+
+.toolbar #export-group .toolbar-btn {
+  background: var(
+    --export-btn-bg,
+    var(--toolbar-btn-bg)
+  );
+
+  color: var(
+    --export-btn-text,
+    var(--toolbar-text)
+  );
+}
+
+/* Export hover state */
+
+.toolbar #export-group .toolbar-btn:hover {
+  background: var(
+    --export-btn-bg,
+    var(--toolbar-btn-hover)
+  );
+
+  filter: brightness(1.08);
+}

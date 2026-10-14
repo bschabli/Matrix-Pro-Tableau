@@ -59,6 +59,8 @@ class MatrixApp {
       const currentTheme = (this.config && this.config.theme) ? this.config.theme : 'theme-light';
       document.body.className = currentTheme;
 
+      this._applyVisibilityClasses();
+
       const currentLang = this.config?.language || 'de';
       if (typeof applyI18n === 'function') applyI18n(currentLang);
 
@@ -100,7 +102,114 @@ class MatrixApp {
       appEl.classList.toggle('no-statusbar', noSB);
       appEl.classList.toggle('no-export', noEX);
     }
+    this._applyBarDesign();
   }
+
+      /**
+     * Apply custom toolbar and status bar design.
+     * Does not trigger Tableau refreshes or settings writes.
+     */
+    _applyBarDesign() {
+      if (!this.config) return;
+
+      const toolbar = document.getElementById(
+        'main-toolbar'
+      );
+
+      const statusBar = document.getElementById(
+        'status-bar'
+      );
+
+      // --------------------------------------------------
+      // Custom colors
+      // --------------------------------------------------
+
+      const colors = this.config.barColors || {};
+      const enabled = colors.enabled === true;
+
+      const variables = [
+        [
+          toolbar,
+          '--toolbar-bg',
+          colors.toolbarBg
+        ],
+        [
+          toolbar,
+          '--toolbar-text',
+          colors.toolbarText
+        ],
+        [
+          toolbar,
+          '--export-btn-bg',
+          colors.exportBg
+        ],
+        [
+          toolbar,
+          '--export-btn-text',
+          colors.exportText
+        ],
+        [
+          statusBar,
+          '--status-bar-bg',
+          colors.statusBg
+        ],
+        [
+          statusBar,
+          '--status-bar-text',
+          colors.statusText
+        ],
+        [
+          statusBar,
+          '--status-bar-label',
+          colors.statusText
+        ]
+      ];
+
+      variables.forEach(([element, property, value]) => {
+        if (!element) return;
+
+        if (
+          enabled &&
+          /^#[0-9a-f]{6}$/i.test(value || '')
+        ) {
+          element.style.setProperty(property, value);
+        } else {
+          element.style.removeProperty(property);
+        }
+      });
+
+      // --------------------------------------------------
+      // Toolbar title
+      // --------------------------------------------------
+
+      const brand = document.getElementById(
+        'toolbar-brand'
+      );
+
+      const title = document.getElementById(
+        'toolbar-brand-text'
+      );
+
+      const showTitle =
+        this.config.showToolbarTitle !== false;
+
+      if (title) {
+        title.textContent =
+          this.config.toolbarTitle || 'Matrix Pro';
+      }
+
+      if (brand) {
+        brand.style.display = showTitle ? 'flex' : 'none';
+      }
+
+      // Keep toolbar buttons right-aligned without a title.
+      if (toolbar) {
+        toolbar.classList.toggle(
+          'toolbar-no-title',
+          !showTitle
+        );
+      }
+    }
 
   /**
    * Listen for real-time format changes broadcast from config dialog window.
