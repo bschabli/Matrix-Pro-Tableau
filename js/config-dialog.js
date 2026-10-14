@@ -909,6 +909,12 @@ class ConfigDialog {
         // Never persist dynamically discovered field metadata.
         delete updated.availableSortFields;
 
+        // Personal column layout belongs to Tableau Custom Views,
+        // not the workbook-wide extension configuration.
+        delete updated.columnOrder;
+        delete updated.hiddenColumns;
+        delete updated.columnWidths;
+
         const settings = tableau.extensions.settings;
         const previousRaw = settings.get('matrixConfig');
 

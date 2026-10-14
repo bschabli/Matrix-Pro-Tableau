@@ -27,6 +27,9 @@ class MatrixApp {
     this._lastDataSignature = null;
     this._lastConfigStr = null;
     this._expansionState = new Map();
+    this._personalParameterName = 'p.matrix_state_guv';
+    this._personalParameter = null;
+    this._baseColumnSettings = null;
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -55,6 +58,16 @@ class MatrixApp {
           this.config.worksheetName = wsNames[0];
         }
       }
+
+      // Remember the workbook defaults separately from personal settings.
+      this._baseColumnSettings = {
+        columnOrder: [...(this.config?.columnOrder || [])],
+        hiddenColumns: [...(this.config?.hiddenColumns || [])],
+        columnWidths: { ...(this.config?.columnWidths || {}) }
+      };
+
+      // Read the personal Tableau parameter before the initial render.
+      await this._setupPersonalState();
 
       // Apply theme class and saved language
       const currentTheme = (this.config && this.config.theme) ? this.config.theme : 'theme-light';
@@ -192,6 +205,239 @@ class MatrixApp {
   // ──────────────────────────────────────────────────────────────────────────
   // Data Pipeline: Fetch → Transform → Render
   // ──────────────────────────────────────────────────────────────────────────
+
+  /**
+ * Connect the personal column layout to a Tableau string parameter.
+ */
+  async _setupPersonalState() {
+    const worksheet = this.connector.getWorksheet(
+      this.config?.worksheetName
+    );
+
+    if (!worksheet?.findParameterAsync) {
+      console.warn(
+        '[MatrixApp] Tableau parameter API unavailable.'
+      );
+      return;
+    }
+
+    try {
+      const parameter = await worksheet.findParameterAsync(
+        this._personalParameterName
+      );
+
+      if (!parameter) {
+        console.warn(
+          `[MatrixApp] Parameter not found: ${this._personalParameterName}`
+        );
+        return;
+      }
+
+      this._personalParameter = parameter;
+
+      // Restore the current Tableau / Custom View state.
+      await this._readPersonalState();
+
+      // React when Tableau loads another parameter value.
+      parameter.addEventListener(
+        tableau.TableauEventType.ParameterChanged,
+        async () => {
+          try {
+            const restored = await this._readPersonalState();
+
+            if (!restored || !this.renderer || !this._matrixData) {
+              return;
+            }
+
+            // Apply widths to the existing renderer as well.
+            this.renderer.options.columnWidths = {
+              ...this.config.columnWidths
+            };
+
+            // No Tableau data query required.
+            this._renderVisibleMatrix();
+            this._updateStatusBar();
+
+          } catch (err) {
+            console.error(
+              '[MatrixApp] Personal view restore failed:',
+              err
+            );
+          }
+        }
+      );
+
+    } catch (err) {
+      console.warn(
+        '[MatrixApp] Personal state initialization failed:',
+        err
+      );
+    }
+  }
+
+  /**
+ * Read and apply personal column settings from Tableau.
+ * An empty parameter restores the workbook defaults.
+ */
+  async _readPersonalState() {
+      if (!this._personalParameter || !this.config) {
+        return false;
+      }
+
+      const worksheet = this.connector.getWorksheet(
+        this.config.worksheetName
+      );
+
+      const parameter = await worksheet.findParameterAsync(
+        this._personalParameterName
+      );
+
+      if (!parameter) return false;
+
+      const raw = String(parameter.currentValue?.value ?? '');
+
+      let state = null;
+
+      if (raw) {
+        try {
+          state = JSON.parse(raw);
+
+          if (
+            !state ||
+            typeof state !== 'object' ||
+            state.v !== 1
+          ) {
+            throw new Error('Unsupported personal state format.');
+          }
+        } catch (err) {
+          console.warn(
+            '[MatrixApp] Invalid personal state parameter:',
+            err
+          );
+          return false;
+        }
+      }
+
+      const defaults = this._baseColumnSettings || {
+        columnOrder: [],
+        hiddenColumns: [],
+        columnWidths: {}
+      };
+
+      // Column order
+      this.config.columnOrder = Array.isArray(state?.columnOrder)
+        ? state.columnOrder.filter(key => typeof key === 'string')
+        : [...defaults.columnOrder];
+
+      // Column visibility
+      this.config.hiddenColumns = Array.isArray(state?.hiddenColumns)
+        ? state.hiddenColumns.filter(key => typeof key === 'string')
+        : [...defaults.hiddenColumns];
+
+      // Column widths
+      const validWidths = state?.columnWidths &&
+        typeof state.columnWidths === 'object' &&
+        !Array.isArray(state.columnWidths)
+          ? Object.fromEntries(
+              Object.entries(state.columnWidths).filter(
+                ([key, width]) =>
+                  typeof key === 'string' &&
+                  Number.isFinite(width) &&
+                  width >= 70 &&
+                  width <= 700
+              )
+            )
+          : { ...defaults.columnWidths };
+
+      this.config.columnWidths = validWidths;
+
+      return true;
+    }
+
+    /**
+     * Write the current column layout to the Tableau parameter.
+     * The user must subsequently save a Tableau Custom View.
+     */
+    async _savePersonalState() {
+      const button = document.getElementById(
+        'btn-save-personal-view'
+      );
+
+      if (button?.disabled) return;
+
+      if (button) button.disabled = true;
+
+      try {
+        const worksheet = this.connector.getWorksheet(
+          this.config?.worksheetName
+        );
+
+        if (!worksheet?.findParameterAsync) {
+          throw new Error(
+            'Die Tableau-Parameter-API ist nicht verfügbar.'
+          );
+        }
+
+        const parameter = await worksheet.findParameterAsync(
+          this._personalParameterName
+        );
+
+        if (!parameter) {
+          throw new Error(
+            `Parameter "${this._personalParameterName}" nicht gefunden.`
+          );
+        }
+
+        const state = {
+          v: 1,
+
+          columnOrder: [
+            ...(this.config.columnOrder || [])
+          ],
+
+          hiddenColumns: [
+            ...(this.config.hiddenColumns || [])
+          ],
+
+          columnWidths: {
+            ...(this.config.columnWidths || {})
+          }
+        };
+
+        const json = JSON.stringify(state);
+
+        // Only write if the parameter value actually changed.
+        if (
+          String(parameter.currentValue?.value ?? '') !== json
+        ) {
+          await parameter.changeValueAsync(json);
+        }
+
+        console.log(
+          '[MatrixApp] Personal column layout transferred to Tableau.'
+        );
+
+        alert(
+          'Spaltenlayout übernommen.\n\n' +
+          'Speichere jetzt deine persönliche Ansicht ' +
+          'über die Custom-View-Funktion in Tableau.'
+        );
+
+      } catch (err) {
+        console.error(
+          '[MatrixApp] Saving personal view failed:',
+          err
+        );
+
+        alert(
+          'Das Spaltenlayout konnte nicht übernommen werden.\n' +
+          (err.message || String(err))
+        );
+
+      } finally {
+        if (button) button.disabled = false;
+      }
+    }
 
   /**
    * Full refresh: fetch data, transform, and render.
@@ -518,6 +764,15 @@ class MatrixApp {
 
         this.config = freshConfig;
 
+        // Reload central defaults and overlay personal column settings.
+        this._baseColumnSettings = {
+          columnOrder: [...(this.config.columnOrder || [])],
+          hiddenColumns: [...(this.config.hiddenColumns || [])],
+          columnWidths: { ...(this.config.columnWidths || {}) }
+        };
+
+        await this._readPersonalState();
+
         const theme = this.config.theme || 'theme-light';
         document.body.className = theme;
 
@@ -814,6 +1069,18 @@ class MatrixApp {
     const refreshBtn = document.getElementById('btn-refresh');
     if (refreshBtn) {
       refreshBtn.addEventListener('click', () => this._refresh());
+    }
+
+    // Save personal column layout to Tableau parameter.
+    const saveViewBtn = document.getElementById(
+      'btn-save-personal-view'
+    );
+
+    if (saveViewBtn) {
+      saveViewBtn.addEventListener(
+        'click',
+        () => this._savePersonalState()
+      );
     }
   }
 

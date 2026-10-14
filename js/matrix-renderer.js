@@ -840,6 +840,26 @@ this._matrixData = matrixData;
   }
 
   /**
+   * Collect default expanded paths from the hierarchy.
+   * @private
+   */
+  _collectExpandedPaths(nodes, parentPath = '') {
+    nodes.forEach((node, index) => {
+      const path = parentPath
+        ? `${parentPath}.${index}`
+        : String(index);
+
+      if (node.children && node.children.length > 0) {
+        if (node.expanded) {
+          this._expandedPaths.add(path);
+        }
+
+        this._collectExpandedPaths(node.children, path);
+      }
+    });
+  }
+
+  /**
    * Set all nodes to expanded or collapsed.
    * @private
    */
