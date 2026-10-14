@@ -26,6 +26,7 @@ class MatrixApp {
     this._isLoading = false;
     this._lastDataSignature = null;
     this._lastConfigStr = null;
+    this._expansionState = new Map();
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -296,6 +297,29 @@ class MatrixApp {
 
       if (isInitialLoad) this._showLoading(t('transforming_data'));
 
+      // Preserve expansion state across data refreshes.
+      if (this.renderer) {
+        const previousFields =
+          this._matrixData?.config?.rowFields || [];
+
+        const currentFields =
+          this.config.rowFields || [];
+
+        if (
+          JSON.stringify(previousFields) ===
+          JSON.stringify(currentFields)
+        ) {
+          for (const [key, expanded] of
+            this.renderer.getExpansionState()) {
+
+            this._expansionState.set(key, expanded);
+          }
+        } else {
+          // Different hierarchy: discard old expansion states.
+          this._expansionState.clear();
+        }
+      }
+
       // 3. Transform flat data → hierarchical matrix
       this.engine = new PivotEngine({
         rowFields: this.config.rowFields || [],
@@ -324,6 +348,7 @@ class MatrixApp {
         showZebra: this.config.showZebra !== false,
         showHGrid: this.config.showHGrid !== false,
         showVGrid: this.config.showVGrid !== false,
+        expansionState: this._expansionState,
         valueFormats: (this.config && this.config.valueFormats) || {},
         columnWidths: this.config.columnWidths || {},
 

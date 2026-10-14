@@ -457,6 +457,36 @@ this._matrixData = matrixData;
   }
 
   /**
+     * Capture expansion states using stable hierarchy labels.
+     */
+    getExpansionState() {
+      const state = new Map();
+
+      const visit = (nodes, parentPath = '') => {
+        nodes.forEach((node, index) => {
+          const path = parentPath
+            ? `${parentPath}.${index}`
+            : String(index);
+
+          if (node.children?.length) {
+            const key = JSON.stringify(node.rowPath);
+
+            state.set(
+              key,
+              this._expandedPaths.has(path)
+            );
+
+            visit(node.children, path);
+          }
+        });
+      };
+
+      visit(this._matrixData?.rowTree || []);
+
+      return state;
+    }
+
+  /**
    * Create a value cell <td> for a given node and column.
    * @private
    */
@@ -769,21 +799,44 @@ this._matrixData = matrixData;
    * Initialize the expanded state from the row tree's default expanded flags.
    * @private
    */
-  _initExpandedState(nodes, parentPath) {
+  /**
+ * Initialize expansion state, preserving known hierarchy nodes.
+    */
+    _initExpandedState(nodes, parentPath = '') {
     this._expandedPaths.clear();
-    this._collectExpandedPaths(nodes, parentPath);
-  }
 
-  _collectExpandedPaths(nodes, parentPath) {
-    nodes.forEach((node, index) => {
-      const path = parentPath ? `${parentPath}.${index}` : `${index}`;
-      if (node.expanded && node.children && node.children.length > 0) {
-        this._expandedPaths.add(path);
-      }
-      if (node.children) {
-        this._collectExpandedPaths(node.children, path);
-      }
-    });
+    // Existing default expansion behavior.
+    this._collectExpandedPaths(nodes, parentPath);
+
+    const saved = this.options.expansionState;
+
+    if (!(saved instanceof Map) || saved.size === 0) {
+      return;
+    }
+
+    const visit = (items, parent = '') => {
+      items.forEach((node, index) => {
+        const path = parent
+          ? `${parent}.${index}`
+          : String(index);
+
+        if (!node.children?.length) return;
+
+        const key = JSON.stringify(node.rowPath);
+
+        if (saved.has(key)) {
+          if (saved.get(key)) {
+            this._expandedPaths.add(path);
+          } else {
+            this._expandedPaths.delete(path);
+          }
+        }
+
+        visit(node.children, path);
+      });
+    };
+
+    visit(nodes, parentPath);
   }
 
   /**
