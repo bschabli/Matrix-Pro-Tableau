@@ -105,9 +105,9 @@ class MatrixApp {
     this._applyBarDesign();
   }
 
-      /**
-     * Apply custom toolbar and status bar design.
-     * Does not trigger Tableau refreshes or settings writes.
+    /**
+     * Apply toolbar title settings.
+     * Colors are controlled exclusively by the selected theme.
      */
     _applyBarDesign() {
       if (!this.config) return;
@@ -115,72 +115,6 @@ class MatrixApp {
       const toolbar = document.getElementById(
         'main-toolbar'
       );
-
-      const statusBar = document.getElementById(
-        'status-bar'
-      );
-
-      // --------------------------------------------------
-      // Custom colors
-      // --------------------------------------------------
-
-      const colors = this.config.barColors || {};
-      const enabled = colors.enabled === true;
-
-      const variables = [
-        [
-          toolbar,
-          '--toolbar-bg',
-          colors.toolbarBg
-        ],
-        [
-          toolbar,
-          '--toolbar-text',
-          colors.toolbarText
-        ],
-        [
-          toolbar,
-          '--export-btn-bg',
-          colors.exportBg
-        ],
-        [
-          toolbar,
-          '--export-btn-text',
-          colors.exportText
-        ],
-        [
-          statusBar,
-          '--status-bar-bg',
-          colors.statusBg
-        ],
-        [
-          statusBar,
-          '--status-bar-text',
-          colors.statusText
-        ],
-        [
-          statusBar,
-          '--status-bar-label',
-          colors.statusText
-        ]
-      ];
-
-      variables.forEach(([element, property, value]) => {
-        if (!element) return;
-
-        if (
-          enabled &&
-          /^#[0-9a-f]{6}$/i.test(value || '')
-        ) {
-          element.style.setProperty(property, value);
-        } else {
-          element.style.removeProperty(property);
-        }
-      });
-
-      // --------------------------------------------------
-      // Toolbar title
-      // --------------------------------------------------
 
       const brand = document.getElementById(
         'toolbar-brand'
@@ -202,7 +136,6 @@ class MatrixApp {
         brand.style.display = showTitle ? 'flex' : 'none';
       }
 
-      // Keep toolbar buttons right-aligned without a title.
       if (toolbar) {
         toolbar.classList.toggle(
           'toolbar-no-title',

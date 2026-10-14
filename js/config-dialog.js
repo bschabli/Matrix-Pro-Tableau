@@ -180,53 +180,6 @@ class ConfigDialog {
         this._config.toolbarTitle ?? 'Matrix Pro';
     }
 
-    // Custom bar colors
-    const colors = this._config.barColors || {};
-
-    const colorInputs = {
-      toolbarBg: 'color-toolbar-bg',
-      toolbarText: 'color-toolbar-text',
-      exportBg: 'color-export-bg',
-      exportText: 'color-export-text',
-      statusBg: 'color-status-bg',
-      statusText: 'color-status-text'
-    };
-
-    Object.entries(colorInputs).forEach(([key, id]) => {
-      const input = document.getElementById(id);
-
-      if (
-        input &&
-        /^#[0-9a-f]{6}$/i.test(colors[key] || '')
-      ) {
-        input.value = colors[key];
-      }
-    });
-
-    const customColorToggle = document.getElementById(
-      'toggle-custom-bar-colors'
-    );
-
-    const colorPanel = document.getElementById(
-      'bar-colors-panel'
-    );
-
-    if (customColorToggle && colorPanel) {
-      customColorToggle.checked = colors.enabled === true;
-
-      const updateColorPanel = () => {
-        colorPanel.style.display =
-          customColorToggle.checked ? 'grid' : 'none';
-      };
-
-      customColorToggle.addEventListener(
-        'change',
-        updateColorPanel
-      );
-
-      updateColorPanel();
-    }
-
     // Drill-through button visibility
     bindToggle(
       'toggle-showdrill',
@@ -934,20 +887,6 @@ class ConfigDialog {
           toolbarTitle:
             getV('toolbar-title-input').trim() || 'Matrix Pro',
 
-          // Custom toolbar and status colors
-          barColors: {
-            enabled: getC('toggle-custom-bar-colors', false),
-
-            toolbarBg: getV('color-toolbar-bg'),
-            toolbarText: getV('color-toolbar-text'),
-
-            exportBg: getV('color-export-bg'),
-            exportText: getV('color-export-text'),
-
-            statusBg: getV('color-status-bg'),
-            statusText: getV('color-status-text')
-          },
-
           showDrillThrough: getC('toggle-showdrill'),
 
           language: getV('language-select') || 'de',
@@ -963,6 +902,9 @@ class ConfigDialog {
             columnName: getV('drill-param-columnName').trim()
           }
         };
+
+        // Remove obsolete individual color settings.
+        delete updated.barColors;
 
         // Never persist dynamically discovered field metadata.
         delete updated.availableSortFields;

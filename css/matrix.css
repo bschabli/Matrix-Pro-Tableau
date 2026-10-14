@@ -1433,3 +1433,91 @@ body.no-export .export-divider,
 
   filter: brightness(1.08);
 }
+
+/* ==========================================================
+   Corporate Theme — Navy / Yellow
+   ========================================================== */
+
+body.theme-corporate,
+#app.theme-corporate,
+.matrix-wrapper.theme-corporate {
+
+  /* Primary corporate colors */
+  --matrix-accent: #032C58;
+  --matrix-accent-hover: #164775;
+  --matrix-accent-light: #DBEDF9;
+
+  /* General */
+  --matrix-bg: #FFFFFF;
+  --matrix-text: #263647;
+  --matrix-text-secondary: #586473;
+
+  /* Toolbar */
+  --toolbar-bg: #032C58;
+  --toolbar-text: #FFFFFF;
+  --toolbar-btn-bg: rgba(255, 255, 255, 0.12);
+  --toolbar-btn-hover: rgba(255, 255, 255, 0.22);
+  --toolbar-btn-active: rgba(255, 255, 255, 0.30);
+
+  /* Export buttons */
+  --export-btn-bg: #FBC10F;
+  --export-btn-text: #032C58;
+
+  /* Status bar */
+  --status-bar-bg: #032C58;
+  --status-bar-text: #FFFFFF;
+  --status-bar-label: #B9DEF3;
+
+  /* Table headers */
+  --matrix-header-bg: #E9EDF1;
+  --matrix-header-bg-hover: #DCE4EB;
+  --matrix-header-text: #032C58;
+  --matrix-header-border: #C4CBD4;
+
+  /* Normal rows: neutral gray zebra pattern */
+  --matrix-row-bg: #FFFFFF;
+  --matrix-row-bg-alt: #F5F6F7;
+  --matrix-row-hover: #EEF4FA;
+  --matrix-row-selected: #DBEDF9;
+
+  /* Subtotals */
+  --matrix-subtotal-bg: #E2E6EA;
+  --matrix-subtotal-text: #032C58;
+
+  /* Grand totals */
+  --matrix-grandtotal-bg: #CDD5DE;
+  --matrix-grandtotal-text: #032C58;
+
+  /* Neutral borders */
+  --matrix-border: #E0E4E8;
+  --matrix-border-strong: #AEB8C2;
+
+  /* Data bars */
+  --cf-bar: #032C58;
+}
+
+/* Yellow line below column headings */
+
+body.theme-corporate
+.matrix-table thead tr:last-child th {
+  border-bottom-color: #FBC10F;
+}
+
+/* Yellow accents on custom summary groups */
+
+body.theme-corporate
+.matrix-table tbody tr.custom-summary-row td {
+  border-top-color: #FBC10F;
+}
+
+body.theme-corporate
+.matrix-table tbody tr.custom-summary-row td.row-header {
+  box-shadow: inset 3px 0 0 #FBC10F;
+}
+
+/* Optional subtle yellow brand accent */
+
+body.theme-corporate #toolbar-brand {
+  border-left: 3px solid #FBC10F;
+  padding-left: 10px;
+}
