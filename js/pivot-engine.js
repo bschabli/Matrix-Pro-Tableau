@@ -814,34 +814,27 @@ class PivotEngine {
       const factor = Number(rawFactor);
 
       if (
-        rawFactor == null ||
-        !Number.isFinite(factor) ||
-        factor === 0
-      ) {
-        console.error('[PivotEngine] Vorzeichen-Diagnose', {
-          basisFeld: field,
-          basisWert: rawBase,
-          gesuchtesFaktorFeld: factorField,
-          gelieferterFaktor: rawFactor,
-          faktorDatentyp: typeof rawFactor,
-
-          gefundeneVorzeichenFelder:
-            Object.entries(record)
-              .filter(([key]) => /vorzeichen/i.test(key))
-              .map(([name, value]) => ({
-                name,
-                value,
-                type: typeof value
-              })),
-
-          alleFeldnamen: Object.keys(record)
-        });
-
-        throw new Error(
-          `Vorzeichenfaktor "${factorField}" ` +
-          `für "${field}" fehlt oder ist ungültig.`
+      rawFactor == null ||
+      !Number.isFinite(factor) ||
+      factor === 0
+    ) {
+      const factorFields = Object.entries(record)
+        .filter(([name]) => /vorzeichen/i.test(name))
+        .map(([name, value]) =>
+          `${name} = ${JSON.stringify(value)} (${typeof value})`
         );
-      }
+
+      throw new Error(
+        'VORZEICHEN-DIAGNOSE V2' +
+        '\nGesuchtes Feld: ' + factorField +
+        '\nBasisfeld: ' + field +
+        '\nBasiswert: ' + rawBase +
+        '\nGefundener Faktor: ' + String(rawFactor) +
+        '\nFaktorfelder: ' +
+          (factorFields.join(' | ') || 'KEINE') +
+        '\nAlle Felder: ' + Object.keys(record).join(' | ')
+      );
+    }
 
       minFactor = Math.min(minFactor, factor);
     }
