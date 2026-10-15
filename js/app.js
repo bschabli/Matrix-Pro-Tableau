@@ -564,10 +564,8 @@ class MatrixApp {
       v.field
   })),
 
-  // Pilot: Vorzeichenfaktor für eine additive Kennzahl.
-  signFactorFields: {
-    'cf.ist_zeitraum_basis': 'cf.ist_zeitraum_vorzeichen'
-  },
+  // Optional aggregation factors configured per measure.
+  signFactorFields: this.config.signFactorFields || {},
 
   showRowTotal: this.config.showRowTotal !== false
 });

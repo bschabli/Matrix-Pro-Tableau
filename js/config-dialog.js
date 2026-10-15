@@ -753,6 +753,69 @@ class ConfigDialog {
       controls.appendChild(decGroup);
 
       row.appendChild(controls);
+
+      // Optional factor-based aggregation.
+      const factorGroup = document.createElement('div');
+      factorGroup.style.cssText =
+        'display:flex;flex-direction:column;gap:5px;margin-top:8px;';
+
+      const factorLabel = document.createElement('span');
+      factorLabel.className = 'form-label';
+      factorLabel.textContent = 'Aggregationsfaktor (optional)';
+
+      const factorSelect = document.createElement('select');
+      factorSelect.id = `val-sign-factor-${fieldKey}`;
+      factorSelect.className = 'form-select';
+      factorSelect.style.width = '100%';
+
+      const addOption = (value, label) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        factorSelect.appendChild(option);
+      };
+
+      // No factor = existing aggregation behavior.
+      addOption('', 'Standard – ohne Faktor');
+
+      const currentFactor =
+        this._config.signFactorFields?.[fieldKey] || '';
+
+      const excluded = new Set([
+        ...(this._config.rowFields || []),
+        ...(this._config.colFields || []),
+        ...valueFields.map(v => v.field)
+      ]);
+
+      const availableFactors = [
+        ...new Set(this._availableSortFields)
+      ].filter(name =>
+        typeof name === 'string' &&
+        !name.startsWith('__') &&
+        !excluded.has(name)
+      ).sort((a, b) => a.localeCompare(b, 'de'));
+
+      // Preserve a previously selected factor.
+      if (
+        currentFactor &&
+        !availableFactors.includes(currentFactor)
+      ) {
+        addOption(
+          currentFactor,
+          `${currentFactor} (aktuell nicht verfügbar)`
+        );
+      }
+
+      availableFactors.forEach(name => {
+        addOption(name, `SUM × MIN(${name})`);
+      });
+
+      factorSelect.value = currentFactor;
+
+      factorGroup.appendChild(factorLabel);
+      factorGroup.appendChild(factorSelect);
+      row.appendChild(factorGroup);
+
       container.appendChild(row);
     });
 
@@ -894,6 +957,7 @@ class ConfigDialog {
 
           valueFormats,
           rowSort,
+          signFactorFields,
 
           cfConfigs: this._config.cfConfigs || {},
 
