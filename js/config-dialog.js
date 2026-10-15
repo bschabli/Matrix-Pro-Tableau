@@ -872,6 +872,25 @@ class ConfigDialog {
         };
       });
 
+      // Optional factor mapping per measure.
+      const signFactorFields = {
+        ...(this._config.signFactorFields || {})
+      };
+
+      (this._config.valueFields || []).forEach(vf => {
+        const select = document.getElementById(
+          `val-sign-factor-${vf.field}`
+        );
+
+        if (!select) return;
+
+        if (select.value) {
+          signFactorFields[vf.field] = select.value;
+        } else {
+          delete signFactorFields[vf.field];
+        }
+      });
+
       // Hierarchy sorting.
       const rowSort = {
         ...(this._config.rowSort || {})
