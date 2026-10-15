@@ -1061,3 +1061,8 @@ class ConfigDialog {
 
 // Expose globally
 window.ConfigDialog = ConfigDialog;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const dialog = new ConfigDialog();
+  dialog.init();
+});

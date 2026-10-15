@@ -198,7 +198,6 @@ class TableauConnector {
         result.valueFields.push({ field: '_count', aggFunc: 'count', label: (typeof t === 'function' ? t('default_measure_label') : 'Recuento') });
       }
 
-      console.log('[TableauConnector] Parsed Encodings Result:', result);
       return result;
     } catch (err) {
       console.warn('[TableauConnector] getVisualSpecificationEncodings error:', err);
@@ -532,7 +531,6 @@ class TableauConnector {
             })
         );
       await Promise.all(promises);
-      console.log(`[TableauConnector] Dashboard filter applied: ${fieldName} = [${values.join(', ')}]`);
     } else if (this._worksheet) {
       await this._worksheet.applyFilterAsync(fieldName, values, tableau.FilterUpdateType.Replace)
         .catch(err => console.warn('[TableauConnector] Filter skipped:', err.message));

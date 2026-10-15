@@ -8,11 +8,10 @@
       Supports multi-level row/column grouping, expand/collapse, subtotals,
       conditional formatting, cross-filtering, and Excel export.
     </description>
-    <author name="Matrix Pro Extension" email="dev@matrixpro.extension" website="https://github.com/matrixpro" />
+    <author name="Matrix Pro" website="https://github.com/bschabli/Matrix-Pro-Tableau" />
     <min-api-version>1.11</min-api-version>
     <source-location>
-      <!-- For production: GitHub Pages URL -->
-      <url>https://arley-economist-dev.github.io/Matrix-Pro-Tableau/index.html</url>
+      <url>https://bschabli.github.io/Matrix-Pro-Tableau/index.html</url>
     </source-location>
 
     <!-- 32x32 base64-encoded PNG icon (grid/matrix icon placeholder) -->

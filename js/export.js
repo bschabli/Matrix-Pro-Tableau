@@ -34,25 +34,40 @@ class ExportManager {
     try {
       const { rows2D } = this._buildExcelData(matrixData);
 
-      // Convert to CSV string
-      const csvContent = rows2D.map(row =>
-        row.map(cell => {
-          const val = cell != null ? String(cell) : '';
-          // Escape cells containing commas, quotes, or newlines
-          if (val.includes(',') || val.includes('"') || val.includes('\n')) {
-            return '"' + val.replace(/"/g, '""') + '"';
-          }
-          return val;
-        }).join(',')
-      ).join('\r\n');
+      const encodeCell = cell => {
+        if (cell == null) return '""';
 
-      // Trigger download
-      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        let value = String(cell);
+
+        // Only text fields need formula protection.
+        // Preserve genuine numeric values, including negatives.
+        if (
+          typeof cell === 'string' &&
+          /^[\s\u200B\uFEFF]*[=+\-@＝＋－＠]/u.test(value)
+        ) {
+          // Excel-oriented protection against formula injection.
+          value = '\t' + value;
+        }
+
+        // Always quote CSV fields and escape embedded quotes.
+        return '"' + value.replace(/"/g, '""') + '"';
+      };
+
+      const csvContent = rows2D
+        .map(row => row.map(encodeCell).join(','))
+        .join('\r\n');
+
+      const blob = new Blob(
+        ['\uFEFF' + csvContent],
+        { type: 'text/csv;charset=utf-8;' }
+      );
+
       this._downloadBlob(blob, `${filename}.csv`);
-      console.log('[ExportManager] CSV file exported:', filename);
+
+      console.log('[ExportManager] CSV exported.');
     } catch (err) {
       console.error('[ExportManager] CSV export failed:', err);
-      alert('Export failed: ' + err.message);
+      alert('CSV export failed.');
     }
   }
 

@@ -24,8 +24,6 @@ class MatrixApp {
     this.config = null;
     this._matrixData = null;
     this._isLoading = false;
-    this._lastDataSignature = null;
-    this._lastConfigStr = null;
     this._expansionState = new Map();
     this._personalParameterName = 'p.matrix_state_guv';
     this._personalParameter = null;
@@ -157,50 +155,6 @@ class MatrixApp {
         );
       }
     }
-
-  /**
-   * Listen for real-time format changes broadcast from config dialog window.
-   * @private
-   */
-  _setupConfigSync() {
-    const applyConfig = (newConfig) => {
-      if (!newConfig) return;
-      console.log('[MatrixApp] Real-time config update received:', newConfig);
-      this.config = Object.assign({}, this.config, newConfig);
-      const theme = this.config.theme || 'theme-light';
-      document.body.className = theme;
-      const appEl = document.getElementById('app');
-      if (appEl) appEl.className = theme;
-      const wrapEl = document.getElementById('matrix-wrapper');
-      if (wrapEl) wrapEl.className = `matrix-wrapper ${theme}`;
-
-      if (newConfig.language && typeof applyI18n === 'function') {
-        applyI18n(newConfig.language);
-      }
-
-      this._applyVisibilityClasses();
-      this._refresh();
-    };
-
-    try {
-      if ('BroadcastChannel' in window) {
-        const bc = new BroadcastChannel('matrix_config_channel');
-        bc.onmessage = (event) => {
-          if (event.data && event.data.type === 'APPLY_CONFIG' && event.data.config) {
-            applyConfig(event.data.config);
-          }
-        };
-      }
-    } catch (e) {}
-
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'matrixConfig' && e.newValue) {
-        try {
-          applyConfig(JSON.parse(e.newValue));
-        } catch (err) {}
-      }
-    });
-  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // Data Pipeline: Fetch → Transform → Render
@@ -489,8 +443,6 @@ class MatrixApp {
         const msg = t('config_prompt_default');
         this._showConfigPrompt(msg);
         this._isLoading = false;
-        this._lastDataSignature = null;
-        this._lastConfigStr = null;
         return;
       }
 
@@ -503,8 +455,6 @@ class MatrixApp {
       if (rawData.length === 0) {
         this._showEmpty(t('no_data_found'));
         this._isLoading = false;
-        this._lastDataSignature = null;
-        this._lastConfigStr = null;
         return;
       }
 
@@ -527,19 +477,6 @@ class MatrixApp {
         '[MatrixApp] Available sort fields:',
         availableFields
       );
-
-      // Calculate data signature and verify against previous load to prevent loop
-      const configStr = JSON.stringify(this.config);
-      const isConfigChanged = configStr !== this._lastConfigStr;
-      const dataSig = this._getDataSignature(rawData);
-
-      if (dataSig === this._lastDataSignature && !isConfigChanged) {
-        console.log('[MatrixApp] Data and configuration are identical. Skipping render.');
-        this._isLoading = false;
-        return;
-      }
-      this._lastDataSignature = dataSig;
-      this._lastConfigStr = configStr;
 
       if (isInitialLoad) this._showLoading(t('transforming_data'));
 
@@ -580,7 +517,6 @@ class MatrixApp {
       });
 
       this._matrixData = this.engine.process(rawData);
-      console.log('[MatrixApp] Matrix data:', this._matrixData);
 
       // 3. Render the matrix
       const container = document.getElementById('matrix-container');
@@ -686,24 +622,6 @@ class MatrixApp {
         this._drillThroughBusy = false;
       }
     }
-
-  /**
-   * Generates a unique signature for the worksheet data to detect real updates.
-   * @private
-   */
-  _getDataSignature(data) {
-    if (!data || data.length === 0) return 'empty';
-    const len = data.length;
-    const firstObj = data[0];
-    const lastObj = data[len - 1];
-    const midObj = data[Math.floor(len / 2)];
-    
-    const firstStr = JSON.stringify(firstObj);
-    const midStr = JSON.stringify(midObj);
-    const lastStr = JSON.stringify(lastObj);
-    
-    return `${len}_${firstStr}_${midStr}_${lastStr}`;
-  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // Configuration Dialog
@@ -818,8 +736,6 @@ class MatrixApp {
    * @private
    */
   async _onCellClick(cellInfo) {
-    console.log('[MatrixApp] Cell clicked:', cellInfo);
-
     try {
       // Apply cross-filter based on the row dimension
       await this.connector.applyDashboardFilter(
@@ -1195,25 +1111,36 @@ class MatrixApp {
    * @private
    */
   _showError(err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const overlay = document.getElementById('overlay');
-    if (overlay) {
-      overlay.innerHTML = `
-        <div class="error-screen">
-          <div class="error-icon">⚠️</div>
-          <div class="error-title">${t('error_title')}</div>
-          <div class="error-message">${message}</div>
-          <button class="welcome-btn" id="btn-error-retry">
-            ${t('btn_retry')}
-          </button>
-        </div>
-      `;
-      overlay.style.display = 'flex';
+    const message = err instanceof Error
+      ? err.message
+      : String(err);
 
-      document.getElementById('btn-error-retry').addEventListener('click', () => {
-        this.init();
-      });
-    }
+    const overlay = document.getElementById('overlay');
+    if (!overlay) return;
+
+    overlay.innerHTML = `
+      <div class="error-screen">
+        <div class="error-icon">⚠️</div>
+        <div class="error-title"></div>
+        <div class="error-message"></div>
+        <button class="welcome-btn" id="btn-error-retry"></button>
+      </div>
+    `;
+
+    overlay.querySelector('.error-title').textContent =
+      t('error_title');
+
+    overlay.querySelector('.error-message').textContent =
+      message;
+
+    const retryButton = overlay.querySelector('#btn-error-retry');
+    retryButton.textContent = t('btn_retry');
+
+    retryButton.addEventListener('click', () => {
+      this.init();
+    });
+
+    overlay.style.display = 'flex';
   }
 
   /**
@@ -1263,7 +1190,4 @@ class MatrixApp {
 document.addEventListener('DOMContentLoaded', () => {
   const app = new MatrixApp();
   app.init();
-
-  // Expose for debugging
-  window.__matrixApp = app;
 });

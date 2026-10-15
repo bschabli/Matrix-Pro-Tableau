@@ -2,6 +2,20 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="
+      default-src 'self';
+      script-src 'self';
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data: blob:;
+      font-src 'self';
+      connect-src 'self';
+      object-src 'none';
+      base-uri 'none';
+      form-action 'none';
+    "
+  >
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Formato Visual — Matrix Pro</title>
   <style>
@@ -960,14 +974,8 @@
     <button class="btn-primary" id="btn-save" data-i18n="btn_apply">✔ Aplicar Formato</button>
   </div>
 
-  <script src="./js/tableau.extensions.1.latest.min.js"></script>
-  <script src="./js/i18n.js"></script>
-  <script src="./js/config-dialog.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const dialog = new ConfigDialog();
-      dialog.init();
-    });
-  </script>
+    <script src="./js/tableau.extensions.1.latest.min.js"></script>
+    <script src="./js/i18n.js"></script>
+    <script src="./js/config-dialog.js"></script>
 </body>
 </html>

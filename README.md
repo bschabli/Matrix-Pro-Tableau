@@ -95,7 +95,7 @@ Builds and manages the interactive DOM table:
 
 ### 1. Production Deployment (GitHub Pages)
 The production version of this extension is already deployed and hosted publicly on GitHub Pages:
-* **Hosted URL:** `https://arley-economist-dev.github.io/Matrix-Pro-Tableau/index.html`
+* **Hosted URL:** `https://github.com/bschabli/Matrix-Pro-Tableau`
 * **Pre-configured Manifest:** The included [`matrix_extension.trex`](matrix_extension.trex) file is already pre-configured to load this live production URL.
 
 ### 2. Local Development (Optional)
