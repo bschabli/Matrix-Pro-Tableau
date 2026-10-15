@@ -333,12 +333,15 @@ class TableauConnector {
         const cell = row[c];
 
         // Use the native value for numeric types, formatted value for strings
-        if (col.dataType === 'float' || col.dataType === 'int') {
-          obj[col.fieldName] = cell.value;
-        } else {
-          // Use formattedValue for dimensions, dates, etc.
-          obj[col.fieldName] = cell.formattedValue;
-        }
+        if (
+            col.dataType === 'float' ||
+            col.dataType === 'integer' ||
+            col.dataType === 'int'
+          ) {
+            obj[col.fieldName] = cell.value;
+          } else {
+            obj[col.fieldName] = cell.formattedValue;
+          }
       }
 
       obj.__tupleId = offset + r + 1;
