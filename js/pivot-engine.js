@@ -818,6 +818,25 @@ class PivotEngine {
         !Number.isFinite(factor) ||
         factor === 0
       ) {
+        console.error('[PivotEngine] Vorzeichen-Diagnose', {
+          basisFeld: field,
+          basisWert: rawBase,
+          gesuchtesFaktorFeld: factorField,
+          gelieferterFaktor: rawFactor,
+          faktorDatentyp: typeof rawFactor,
+
+          gefundeneVorzeichenFelder:
+            Object.entries(record)
+              .filter(([key]) => /vorzeichen/i.test(key))
+              .map(([name, value]) => ({
+                name,
+                value,
+                type: typeof value
+              })),
+
+          alleFeldnamen: Object.keys(record)
+        });
+
         throw new Error(
           `Vorzeichenfaktor "${factorField}" ` +
           `für "${field}" fehlt oder ist ungültig.`
