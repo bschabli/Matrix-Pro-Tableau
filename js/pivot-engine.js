@@ -757,110 +757,116 @@ class PivotEngine {
    * @returns {number|null}
    */
   _aggregate(records, field, aggFunc) {
-  if (!records || records.length === 0) {
-    return null;
-  }
-
-  if (field === '_count' || aggFunc === 'count') {
-    return records.length;
-  }
-
-  const values = [];
-
-  for (const record of records) {
-    const value = Number(
-      this._getRowValue(record, field)
-    );
-
-    if (Number.isFinite(value) &&
-        this._getRowValue(record, field) != null) {
-      values.push(value);
-    }
-  }
-
-  if (!values.length) return null;
-
-  // Optional factor-based aggregation.
-  const factorField =
-    this.signFactorFields[field] ||
-    this.signFactorFields[
-      this._normalizeFieldName(field)
-    ];
-
-  if (factorField) {
-    const sum = values.reduce(
-      (a, b) => a + b,
-      0
-    );
-
-    let minFactor = Infinity;
-
-    for (const record of records) {
-      const rawBase = this._getRowValue(
-        record,
-        field
-      );
-
-      if (rawBase == null ||
-          !Number.isFinite(Number(rawBase))) {
-        continue;
+      if (!records || records.length === 0) {
+        return null;
       }
 
-      const rawFactor = this._getRowValue(
-        record,
-        factorField
-      );
+      if (field === '_count' || aggFunc === 'count') {
+        return records.length;
+      }
 
-      const factor = Number(rawFactor);
+      const values = [];
 
-      if (
-      rawFactor == null ||
-      !Number.isFinite(factor) ||
-      factor === 0
-    ) {
-      const factorFields = Object.entries(record)
-        .filter(([name]) => /vorzeichen/i.test(name))
-        .map(([name, value]) =>
-          `${name} = ${JSON.stringify(value)} (${typeof value})`
-        );
+      for (const record of records) {
+        const rawValue = this._getRowValue(record, field);
 
-      throw new Error(
-        'VORZEICHEN-DIAGNOSE V2' +
-        '\nGesuchtes Feld: ' + factorField +
-        '\nBasisfeld: ' + field +
-        '\nBasiswert: ' + rawBase +
-        '\nGefundener Faktor: ' + String(rawFactor) +
-        '\nFaktorfelder: ' +
-          (factorFields.join(' | ') || 'KEINE') +
-        '\nAlle Felder: ' + Object.keys(record).join(' | ')
-      );
-    }
+        if (rawValue == null) continue;
 
-      minFactor = Math.min(minFactor, factor);
-    }
+        const value = Number(rawValue);
 
-    return sum * minFactor;
-  }
+        if (Number.isFinite(value)) {
+          values.push(value);
+        }
+      }
 
-  // Existing aggregation behavior.
-  switch (aggFunc) {
-    case 'sum':
-      return values.reduce((a, b) => a + b, 0);
+      if (!values.length) return null;
 
-    case 'avg':
-    case 'average':
-      return values.reduce((a, b) => a + b, 0)
-        / values.length;
+      // Optional factor-based aggregation.
+      const factorField =
+        this.signFactorFields[field] ||
+        this.signFactorFields[
+          this._normalizeFieldName(field)
+        ];
 
-    case 'min':
-      return Math.min(...values);
+      if (factorField) {
+        const sum = values.reduce((a, b) => a + b, 0);
 
-    case 'max':
-      return Math.max(...values);
+        // Ignore floating-point residues close to zero.
+        const EPSILON = 1e-9;
 
-    default:
-      return values.reduce((a, b) => a + b, 0);
-  }
+        let minFactor = Infinity;
+
+        for (const record of records) {
+          const rawBase = this._getRowValue(record, field);
+
+          if (rawBase == null) continue;
+
+          const baseValue = Number(rawBase);
+
+          if (!Number.isFinite(baseValue)) continue;
+
+          const rawFactor = this._getRowValue(
+            record,
+            factorField
+          );
+
+          const factor = Number(rawFactor);
+
+          // Missing or invalid factor.
+          if (
+            rawFactor == null ||
+            !Number.isFinite(factor) ||
+            factor === 0
+          ) {
+            // Ignore insignificant floating-point residues.
+            if (Math.abs(baseValue) < EPSILON) {
+              continue;
+            }
+
+            // A relevant amount must have a valid factor.
+            throw new Error(
+              `Vorzeichenfaktor "${factorField}" fehlt ` +
+              `für Basiswert ${baseValue}. ` +
+              `Gelieferter Faktor: ${String(rawFactor)}`
+            );
+          }
+
+          minFactor = Math.min(minFactor, factor);
+        }
+
+        // No valid factors, but effectively zero amount.
+        if (minFactor === Infinity) {
+          if (Math.abs(sum) < EPSILON) {
+            return 0;
+          }
+
+          throw new Error(
+            `Kein gültiger Vorzeichenfaktor für "${field}" vorhanden.`
+          );
+        }
+
+        return sum * minFactor;
+      }
+
+      // Normal aggregation without factor.
+      switch (aggFunc) {
+        case 'sum':
+          return values.reduce((a, b) => a + b, 0);
+
+        case 'avg':
+        case 'average':
+          return values.reduce((a, b) => a + b, 0)
+            / values.length;
+
+        case 'min':
+          return Math.min(...values);
+
+        case 'max':
+          return Math.max(...values);
+
+        default:
+          return values.reduce((a, b) => a + b, 0);
+      }
     }
 
 
