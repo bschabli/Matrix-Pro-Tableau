@@ -505,16 +505,26 @@ class MatrixApp {
 
       // 3. Transform flat data → hierarchical matrix
       this.engine = new PivotEngine({
-        rowFields: this.config.rowFields || [],
-        rowSort: this.config.rowSort || {},
-        summaryGroups: this.config.summaryGroups || [],
-        colFields: this.config.colFields || [],
-        valueFields: (this.config.valueFields || []).map(v => ({
-          ...v,
-          label: this.config.valueFormats?.[v.field]?.label || v.label || v.field
-        })),
-        showRowTotal: this.config.showRowTotal !== false
-      });
+  rowFields: this.config.rowFields || [],
+  rowSort: this.config.rowSort || {},
+  summaryGroups: this.config.summaryGroups || [],
+  colFields: this.config.colFields || [],
+
+  valueFields: (this.config.valueFields || []).map(v => ({
+    ...v,
+    label:
+      this.config.valueFormats?.[v.field]?.label ||
+      v.label ||
+      v.field
+  })),
+
+  // Pilot: Vorzeichenfaktor für eine additive Kennzahl.
+  signFactorFields: {
+    'cf.ist_zeitraum_basis': 'cf.ist_zeitraum_vorzeichen'
+  },
+
+  showRowTotal: this.config.showRowTotal !== false
+});
 
       this._matrixData = this.engine.process(rawData);
 

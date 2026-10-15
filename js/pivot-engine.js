@@ -37,21 +37,27 @@ class PivotEngine {
    * @param {Array<{field: string, aggFunc: string, label?: string}>} config.valueFields
    */
   constructor(config = {}) {
-    this.rowFields = config.rowFields || [];
-    this.rowSort = config.rowSort || {};
-    this.summaryGroups = config.summaryGroups || [];
-    this._rowSortCollator = new Intl.Collator('de', {
-      numeric: true,
-      sensitivity: 'base'
-    });
-    this.colFields = config.colFields || [];
-    this.showRowTotal = config.showRowTotal !== false;
-    this.valueFields = (config.valueFields || []).map(v => ({
-      field: v.field,
-      aggFunc: v.aggFunc || 'sum',
-      label: v.label || v.field
-    }));
-  }
+      this.rowFields = config.rowFields || [];
+      this.rowSort = config.rowSort || {};
+      this.summaryGroups = config.summaryGroups || [];
+
+      this._rowSortCollator = new Intl.Collator('de', {
+        numeric: true,
+        sensitivity: 'base'
+      });
+
+      this.colFields = config.colFields || [];
+      this.showRowTotal = config.showRowTotal !== false;
+
+      // Optional factor field for each measure.
+      this.signFactorFields = config.signFactorFields || {};
+
+      this.valueFields = (config.valueFields || []).map(v => ({
+        field: v.field,
+        aggFunc: v.aggFunc || 'sum',
+        label: v.label || v.field
+      }));
+    }
 
   // ──────────────────────────────────────────────────────────────────────────
   // Public API
@@ -697,36 +703,101 @@ class PivotEngine {
    * @returns {number|null}
    */
   _aggregate(records, field, aggFunc) {
-    if (!records || records.length === 0) return null;
-    if (field === '_count' || aggFunc === 'count') {
-      return records.length;
-    }
+      if (!records || records.length === 0) {
+        return null;
+      }
 
-    const values = [];
-    for (let i = 0; i < records.length; i++) {
-      const val = this._getRowValue(records[i], field);
-      const v = parseFloat(val);
-      if (!isNaN(v)) values.push(v);
-    }
+      if (field === '_count' || aggFunc === 'count') {
+        return records.length;
+      }
 
-    if (values.length === 0) return null;
+      const values = [];
 
-    switch (aggFunc) {
-      case 'sum':
-        return values.reduce((a, b) => a + b, 0);
-      case 'avg':
-      case 'average':
-        return values.reduce((a, b) => a + b, 0) / values.length;
-      case 'min':
-        return Math.min(...values);
-      case 'max':
-        return Math.max(...values);
-      case 'count':
-        return values.length;
-      default:
-        return values.reduce((a, b) => a + b, 0);
+      for (const record of records) {
+        const value = parseFloat(
+          this._getRowValue(record, field)
+        );
+
+        if (Number.isFinite(value)) {
+          values.push(value);
+        }
+      }
+
+      if (values.length === 0) {
+        return null;
+      }
+
+      switch (aggFunc) {
+        case 'sum': {
+          const sum = values.reduce(
+            (a, b) => a + b,
+            0
+          );
+
+          const factorField = this.signFactorFields[field];
+
+          // No factor configured: normal summation.
+          if (!factorField) {
+            return sum;
+          }
+
+          // Factor is evaluated over the same records
+          // that actually contribute to this measure.
+          let minFactor = Infinity;
+
+          for (const record of records) {
+            const baseValue = parseFloat(
+              this._getRowValue(record, field)
+            );
+
+            if (!Number.isFinite(baseValue)) {
+              continue;
+            }
+
+            const factorValue = Number(
+              this._getRowValue(record, factorField)
+            );
+
+            if (
+              !Number.isFinite(factorValue) ||
+              factorValue === 0
+            ) {
+              throw new Error(
+                `Ungültiger oder fehlender Vorzeichenfaktor ` +
+                `"${factorField}" für "${field}". ` +
+                `Bitte das Feld auf Tableau Detail prüfen.`
+              );
+            }
+
+            minFactor = Math.min(
+              minFactor,
+              factorValue
+            );
+          }
+
+          return sum * minFactor;
+        }
+
+        case 'avg':
+        case 'average':
+          return values.reduce(
+            (a, b) => a + b,
+            0
+          ) / values.length;
+
+        case 'min':
+          return Math.min(...values);
+
+        case 'max':
+          return Math.max(...values);
+
+        default:
+          return values.reduce(
+            (a, b) => a + b,
+            0
+          );
+      }
     }
-  }
 
   /**
    * Filter records that match a specific column combination.
