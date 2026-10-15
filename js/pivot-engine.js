@@ -674,25 +674,79 @@ class PivotEngine {
     return result;
   }
 
+  _normalizeFieldName(name) {
+      let value = String(name ?? '').trim();
+
+      for (let i = 0; i < 5; i++) {
+        // Remove Tableau brackets.
+        value = value.replace(/^\[(.*)\]$/, '$1').trim();
+
+        // Remove Tableau aggregation wrappers.
+        const match = value.match(
+          /^(?:AGG|SUM|SUMME|MIN|MAX|AVG|AVERAGE|ATTR|COUNT|COUNTD)\s*\((.*)\)$/i
+        );
+
+        if (!match) break;
+
+        value = match[1].trim();
+      }
+
+      return value.replace(/^\[(.*)\]$/, '$1').trim();
+    }
+
   /**
    * Helper to retrieve a row value by field name, handling bracket notation and key aliases.
    * @private
    */
   _getRowValue(row, fieldName) {
-    if (!row || !fieldName) return undefined;
-    if (row[fieldName] !== undefined) return row[fieldName];
+      if (!row || !fieldName) return undefined;
 
-    const cleanField = String(fieldName).replace(/^\[|\]$/g, '').trim();
-    if (row[cleanField] !== undefined) return row[cleanField];
+      // 1. Exact match.
+      if (Object.prototype.hasOwnProperty.call(row, fieldName)) {
+        return row[fieldName];
+      }
 
-    const keys = Object.keys(row);
-    const matchedKey = keys.find(k => {
-      const cleanK = k.replace(/^\[|\]$/g, '').trim();
-      return cleanK === cleanField || cleanK.endsWith(cleanField) || cleanField.endsWith(cleanK);
-    });
+      // 2. Match without Tableau aggregation wrappers.
+      const normalized = this._normalizeFieldName(fieldName);
 
-    return matchedKey ? row[matchedKey] : undefined;
-  }
+      if (Object.prototype.hasOwnProperty.call(row, normalized)) {
+        return row[normalized];
+      }
+
+      const keys = Object.keys(row);
+
+      const matches = keys.filter(
+        key => this._normalizeFieldName(key) === normalized
+      );
+
+      if (matches.length === 1) {
+        return row[matches[0]];
+      }
+
+      // Avoid selecting an arbitrary column if aliases overlap.
+      if (matches.length > 1) {
+        console.warn(
+          '[PivotEngine] Ambiguous field:',
+          fieldName,
+          matches
+        );
+        return undefined;
+      }
+
+  // 3. Existing fallback for qualified field names.
+  const matchedKey = keys.find(key => {
+    const cleanKey = String(key)
+      .replace(/^\[|\]$/g, '')
+      .trim();
+
+    return (
+      cleanKey.endsWith(normalized) ||
+      normalized.endsWith(cleanKey)
+    );
+  });
+
+  return matchedKey ? row[matchedKey] : undefined;
+}
 
   /**
    * Aggregate an array of records for a single field using the given function.
@@ -703,101 +757,100 @@ class PivotEngine {
    * @returns {number|null}
    */
   _aggregate(records, field, aggFunc) {
-      if (!records || records.length === 0) {
-        return null;
-      }
+  if (!records || records.length === 0) {
+    return null;
+  }
 
-      if (field === '_count' || aggFunc === 'count') {
-        return records.length;
-      }
+  if (field === '_count' || aggFunc === 'count') {
+    return records.length;
+  }
 
-      const values = [];
+  const values = [];
 
-      for (const record of records) {
-        const value = parseFloat(
-          this._getRowValue(record, field)
-        );
+  for (const record of records) {
+    const value = Number(
+      this._getRowValue(record, field)
+    );
 
-        if (Number.isFinite(value)) {
-          values.push(value);
-        }
-      }
-
-      if (values.length === 0) {
-        return null;
-      }
-
-      switch (aggFunc) {
-        case 'sum': {
-          const sum = values.reduce(
-            (a, b) => a + b,
-            0
-          );
-
-          const factorField = this.signFactorFields[field];
-
-          // No factor configured: normal summation.
-          if (!factorField) {
-            return sum;
-          }
-
-          // Factor is evaluated over the same records
-          // that actually contribute to this measure.
-          let minFactor = Infinity;
-
-          for (const record of records) {
-            const baseValue = parseFloat(
-              this._getRowValue(record, field)
-            );
-
-            if (!Number.isFinite(baseValue)) {
-              continue;
-            }
-
-            const factorValue = Number(
-              this._getRowValue(record, factorField)
-            );
-
-            if (
-              !Number.isFinite(factorValue) ||
-              factorValue === 0
-            ) {
-              throw new Error(
-                `Ungültiger oder fehlender Vorzeichenfaktor ` +
-                `"${factorField}" für "${field}". ` +
-                `Bitte das Feld auf Tableau Detail prüfen.`
-              );
-            }
-
-            minFactor = Math.min(
-              minFactor,
-              factorValue
-            );
-          }
-
-          return sum * minFactor;
-        }
-
-        case 'avg':
-        case 'average':
-          return values.reduce(
-            (a, b) => a + b,
-            0
-          ) / values.length;
-
-        case 'min':
-          return Math.min(...values);
-
-        case 'max':
-          return Math.max(...values);
-
-        default:
-          return values.reduce(
-            (a, b) => a + b,
-            0
-          );
-      }
+    if (Number.isFinite(value) &&
+        this._getRowValue(record, field) != null) {
+      values.push(value);
     }
+  }
+
+  if (!values.length) return null;
+
+  // Optional factor-based aggregation.
+  const factorField =
+    this.signFactorFields[field] ||
+    this.signFactorFields[
+      this._normalizeFieldName(field)
+    ];
+
+  if (factorField) {
+    const sum = values.reduce(
+      (a, b) => a + b,
+      0
+    );
+
+    let minFactor = Infinity;
+
+    for (const record of records) {
+      const rawBase = this._getRowValue(
+        record,
+        field
+      );
+
+      if (rawBase == null ||
+          !Number.isFinite(Number(rawBase))) {
+        continue;
+      }
+
+      const rawFactor = this._getRowValue(
+        record,
+        factorField
+      );
+
+      const factor = Number(rawFactor);
+
+      if (
+        rawFactor == null ||
+        !Number.isFinite(factor) ||
+        factor === 0
+      ) {
+        throw new Error(
+          `Vorzeichenfaktor "${factorField}" ` +
+          `für "${field}" fehlt oder ist ungültig.`
+        );
+      }
+
+      minFactor = Math.min(minFactor, factor);
+    }
+
+    return sum * minFactor;
+  }
+
+  // Existing aggregation behavior.
+  switch (aggFunc) {
+    case 'sum':
+      return values.reduce((a, b) => a + b, 0);
+
+    case 'avg':
+    case 'average':
+      return values.reduce((a, b) => a + b, 0)
+        / values.length;
+
+    case 'min':
+      return Math.min(...values);
+
+    case 'max':
+      return Math.max(...values);
+
+    default:
+      return values.reduce((a, b) => a + b, 0);
+  }
+    }
+
 
   /**
    * Filter records that match a specific column combination.

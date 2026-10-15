@@ -67,6 +67,8 @@ class MatrixApp {
       // Read the personal Tableau parameter before the initial render.
       await this._setupPersonalState();
 
+      await this._setupSignParameterListener();
+
       // Apply theme class and saved language
       const currentTheme = (this.config && this.config.theme) ? this.config.theme : 'theme-light';
       document.body.className = currentTheme;
@@ -159,6 +161,50 @@ class MatrixApp {
   // ──────────────────────────────────────────────────────────────────────────
   // Data Pipeline: Fetch → Transform → Render
   // ──────────────────────────────────────────────────────────────────────────
+
+  async _setupSignParameterListener() {
+      const worksheet = this.connector.getWorksheet(
+        this.config?.worksheetName
+      );
+
+      if (!worksheet?.findParameterAsync) return;
+
+      try {
+        const parameter = await worksheet.findParameterAsync(
+          'p.sap_vs_management'
+        );
+
+        if (!parameter) {
+          console.warn(
+            '[MatrixApp] Vorzeichenparameter nicht gefunden.'
+          );
+          return;
+        }
+
+        this._signParameterUnregister =
+          parameter.addEventListener(
+            tableau.TableauEventType.ParameterChanged,
+            () => {
+              console.log(
+                '[MatrixApp] Vorzeichenparameter geändert.'
+              );
+
+              // Reuse the existing debounced refresh.
+              this._onDataChanged();
+            }
+          );
+
+        console.log(
+          '[MatrixApp] Vorzeichenparameter-Listener registriert.'
+        );
+
+      } catch (err) {
+        console.error(
+          '[MatrixApp] Vorzeichenparameter-Listener:',
+          err
+        );
+      }
+    }
 
   /**
  * Connect the personal column layout to a Tableau string parameter.
