@@ -21,6 +21,7 @@ class ConfigDialog {
       density: 'normal',
       fontSize: '12px',
       showZebra: true,
+      raggedHierarchy: false,
       showHGrid: true,
       showVGrid: true,
       showSubtotals: true,
@@ -155,6 +156,7 @@ class ConfigDialog {
     }
 
     bindToggle('toggle-zebra', 'showZebra', true);
+    bindToggle('toggle-ragged', 'raggedHierarchy', false);
     bindToggle('toggle-hgrid', 'showHGrid', true);
     bindToggle('toggle-vgrid', 'showVGrid', true);
     bindToggle('toggle-subtotals', 'showSubtotals', true);
@@ -952,6 +954,7 @@ class ConfigDialog {
           fontSize: getV('fontsize-select') || '12px',
 
           showZebra: getC('toggle-zebra'),
+          raggedHierarchy: getC('toggle-ragged', false),
           showHGrid: getC('toggle-hgrid'),
           showVGrid: getC('toggle-vgrid'),
 
