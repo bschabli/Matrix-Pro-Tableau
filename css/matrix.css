@@ -173,6 +173,12 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Hide the unthemed shell until Tableau workbook settings are loaded.
+   The pending class is removed as soon as the selected theme is applied. */
+body.theme-pending #app {
+  visibility: hidden;
+}
+
 /* --------------------------------------------------------------------------
    App Layout
    -------------------------------------------------------------------------- */
