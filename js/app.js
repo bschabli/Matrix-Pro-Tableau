@@ -534,9 +534,15 @@ class MatrixApp {
         const currentFields =
           this.config.rowFields || [];
 
+        const previousRagged =
+          this._matrixData?.config?.raggedHierarchy === true;
+        const currentRagged =
+          this.config.raggedHierarchy === true;
+
         if (
           JSON.stringify(previousFields) ===
-          JSON.stringify(currentFields)
+            JSON.stringify(currentFields) &&
+          previousRagged === currentRagged
         ) {
           for (const [key, expanded] of
             this.renderer.getExpansionState()) {
@@ -552,6 +558,7 @@ class MatrixApp {
       // 3. Transform flat data → hierarchical matrix
       this.engine = new PivotEngine({
   rowFields: this.config.rowFields || [],
+  raggedHierarchy: this.config.raggedHierarchy === true,
   rowSort: this.config.rowSort || {},
   summaryGroups: this.config.summaryGroups || [],
   colFields: this.config.colFields || [],
