@@ -331,17 +331,29 @@ class TableauConnector {
       for (let c = 0; c < columns.length; c++) {
         const col = columns[c];
         const cell = row[c];
+        const rawValue = cell.value;
 
-        // Use the native value for numeric types, formatted value for strings
-        if (
-            col.dataType === 'float' ||
-            col.dataType === 'integer' ||
-            col.dataType === 'int'
-          ) {
-            obj[col.fieldName] = cell.value;
-          } else {
-            obj[col.fieldName] = cell.formattedValue;
-          }
+        // Tableau can expose NULL as the special raw value "%null%".
+        // Preserve genuine NULL before reading formatted dimension labels.
+        const isNull =
+          rawValue === null ||
+          rawValue === undefined ||
+          (
+            typeof rawValue === 'string' &&
+            rawValue.trim().toLowerCase() === '%null%'
+          );
+
+        if (isNull) {
+          obj[col.fieldName] = null;
+        } else if (
+          col.dataType === 'float' ||
+          col.dataType === 'integer' ||
+          col.dataType === 'int'
+        ) {
+          obj[col.fieldName] = rawValue;
+        } else {
+          obj[col.fieldName] = cell.formattedValue;
+        }
       }
 
       obj.__tupleId = offset + r + 1;
