@@ -1527,3 +1527,102 @@ body.theme-corporate #toolbar-brand {
   border-left: 3px solid #FBC10F;
   padding-left: 10px;
 }
+
+/* ==========================================================
+   Corporate Light — Soft Gray / Navy / Yellow
+   Quiet alternative to the navy Corporate Design LVB.
+   ========================================================== */
+
+body.theme-corporate-light,
+#app.theme-corporate-light,
+.matrix-wrapper.theme-corporate-light {
+
+  /* Corporate identity */
+  --matrix-accent: #032C58;
+  --matrix-accent-hover: #164775;
+  --matrix-accent-light: #EEF4FA;
+
+  /* General */
+  --matrix-bg: #FFFFFF;
+  --matrix-text: #263647;
+  --matrix-text-secondary: #586473;
+
+  /* Light gray toolbar, dark navy text */
+  --toolbar-bg: #EEF1F3;
+  --toolbar-text: #253B50;
+  --toolbar-btn-bg: #FAFBFC;
+  --toolbar-btn-hover: #E1E7EB;
+  --toolbar-btn-active: #D4DDE4;
+  --toolbar-shadow: 0 1px 3px rgba(3, 44, 88, 0.10);
+
+  /* Yellow is reserved for small visual accents */
+  --export-btn-bg: #FBC10F;
+  --export-btn-text: #032C58;
+
+  /* Light status bar */
+  --status-bar-bg: #F6F7F8;
+  --status-bar-text: #263647;
+  --status-bar-label: #586473;
+
+  /* Matrix headings */
+  --matrix-header-bg: #EFF2F4;
+  --matrix-header-bg-hover: #E3E8EC;
+  --matrix-header-text: #032C58;
+  --matrix-header-border: #C7D0D8;
+
+  /* Normal rows */
+  --matrix-row-bg: #FFFFFF;
+  --matrix-row-bg-alt: #F7F8F9;
+  --matrix-row-hover: #EEF4FA;
+  --matrix-row-selected: #DAE8F2;
+
+  /* Subtotals and totals */
+  --matrix-subtotal-bg: #E9EDF0;
+  --matrix-subtotal-text: #032C58;
+  --matrix-grandtotal-bg: #DCE3E9;
+  --matrix-grandtotal-text: #032C58;
+
+  /* Neutral borders */
+  --matrix-border: #E1E6EA;
+  --matrix-border-strong: #B9C5CF;
+
+  --cf-bar: #032C58;
+}
+
+/* Give toolbar buttons a visible neutral border on the light surface */
+body.theme-corporate-light .toolbar .toolbar-btn {
+  border-color: #C8D1D9;
+}
+
+body.theme-corporate-light .toolbar .toolbar-btn:hover {
+  border-color: #AAB8C5;
+}
+
+/* Replace the default white-on-dark divider with a gray one */
+body.theme-corporate-light .toolbar-divider {
+  background: #C7D0D8;
+}
+
+/* Thin yellow signature line below column headings */
+body.theme-corporate-light
+.matrix-table thead tr:last-child th {
+  border-bottom-color: #FBC10F;
+}
+
+/* Small yellow accent on custom summary groups */
+body.theme-corporate-light
+.matrix-table tbody tr.custom-summary-row td {
+  border-top-color: #FBC10F;
+}
+
+body.theme-corporate-light
+.matrix-table tbody tr.custom-summary-row td.row-header {
+  box-shadow: inset 3px 0 0 #FBC10F;
+}
+
+/* Discreet brand marker rather than a dark toolbar */
+body.theme-corporate-light #toolbar-brand {
+  border-left: 3px solid #FBC10F;
+  padding-left: 10px;
+}
+
