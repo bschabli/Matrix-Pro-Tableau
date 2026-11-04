@@ -469,7 +469,7 @@ this._matrixData = matrixData;
             : String(index);
 
           if (node.children?.length) {
-            const key = JSON.stringify(node.rowPath);
+            const key = node.rowStateKey || JSON.stringify(node.rowPath);
 
             state.set(
               key,
@@ -822,7 +822,7 @@ this._matrixData = matrixData;
 
         if (!node.children?.length) return;
 
-        const key = JSON.stringify(node.rowPath);
+        const key = node.rowStateKey || JSON.stringify(node.rowPath);
 
         if (saved.has(key)) {
           if (saved.get(key)) {
