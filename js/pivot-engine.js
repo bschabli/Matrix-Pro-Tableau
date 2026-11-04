@@ -38,6 +38,7 @@ class PivotEngine {
    */
   constructor(config = {}) {
       this.rowFields = config.rowFields || [];
+      this.raggedHierarchy = config.raggedHierarchy === true;
       this.rowSort = config.rowSort || {};
       this.summaryGroups = config.summaryGroups || [];
 
@@ -82,11 +83,9 @@ class PivotEngine {
       const headerRows = this._buildHeaderRows(flatColumns);
 
       // Existing hierarchy remains unchanged.
-      const rowTree = this._buildRowTree(
-        flatData,
-        0,
-        colCombinations
-      );
+      const rowTree = this.raggedHierarchy
+        ? this._buildRaggedRowTree(flatData, colCombinations)
+        : this._buildRowTree(flatData, 0, colCombinations);
 
       // Calculate additional summary rows separately.
       const summaryGroups = this._computeSummaryGroups(
@@ -114,11 +113,27 @@ class PivotEngine {
         valueRanges,
         config: {
           rowFields: this.rowFields,
+          raggedHierarchy: this.raggedHierarchy,
           colFields: this.colFields,
           valueFields: this.valueFields
         }
       };
     }
+
+  _groupRaggedRootRecords(records) {
+    const groups = new Map();
+
+    for (const record of records) {
+      const segments = this._getRaggedSegments(record);
+      const label = segments[0]?.label;
+
+      if (label === undefined) continue;
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label).push(record);
+    }
+
+    return groups;
+  }
 
   _computeSummaryGroups(records, colCombinations) {
       if (
@@ -129,10 +144,9 @@ class PivotEngine {
       }
 
       // Use the same grouping logic as the existing hierarchy.
-      const grouped = this._groupBy(
-        records,
-        this.rowFields[0]
-      );
+      const grouped = this.raggedHierarchy
+        ? this._groupRaggedRootRecords(records)
+        : this._groupBy(records, this.rowFields[0]);
 
       const results = [];
 
@@ -396,6 +410,158 @@ class PivotEngine {
    * Each node has aggregated values for every flat-column key.
    * @private
    */
+  /**
+   * Build one visible path for each record. Preserve the source field and
+   * level so existing per-field sorting continues to work.
+   */
+  _getRaggedSegments(record) {
+    const segments = [];
+
+    this.rowFields.forEach((field, sourceLevel) => {
+      const rawValue = this._getRowValue(record, field);
+      if (rawValue === null || rawValue === undefined) return;
+
+      const label = String(rawValue).trim();
+      if (
+        !label ||
+        label === '(Blank)' ||
+        label.toLowerCase() === '%null%'
+      ) {
+        return;
+      }
+
+      segments.push({ label, field, sourceLevel });
+    });
+
+    // Keep records that have no hierarchy assignment at all.
+    if (segments.length === 0 && this.rowFields.length) {
+      segments.push({
+        label: '(Blank)',
+        field: this.rowFields[0],
+        sourceLevel: 0
+      });
+    }
+
+    return segments;
+  }
+
+  /**
+   * Create variable-depth row nodes. Each record participates once in every
+   * ancestor; rows ending at an intermediate node are included in its value.
+   */
+  _buildRaggedRowTree(records, colCombinations) {
+    if (!this.rowFields.length) return [];
+
+    const root = {
+      rowPath: [],
+      statePath: [],
+      children: new Map()
+    };
+
+    for (const record of records) {
+      let parent = root;
+      const segments = this._getRaggedSegments(record);
+
+      for (let depth = 0; depth < segments.length; depth++) {
+        const segment = segments[depth];
+        const identity = JSON.stringify([
+          segment.sourceLevel,
+          segment.label
+        ]);
+
+        let node = parent.children.get(identity);
+
+        if (!node) {
+          node = {
+            label: segment.label,
+            field: segment.field,
+            sourceLevel: segment.sourceLevel,
+            level: depth,
+            rowPath: [...parent.rowPath, segment.label],
+            statePath: [
+              ...parent.statePath,
+              [segment.field, segment.label]
+            ],
+            records: [],
+            directRecordCount: 0,
+            children: new Map()
+          };
+          parent.children.set(identity, node);
+        }
+
+        node.records.push(record);
+        parent = node;
+      }
+
+      if (segments.length) parent.directRecordCount++;
+    }
+
+    const compareNodes = (a, b) => {
+      // Keep different original hierarchy fields in their configured order.
+      if (a.sourceLevel !== b.sourceLevel) {
+        return a.sourceLevel - b.sourceLevel;
+      }
+
+      const rule = this.rowSort[a.field] || {};
+      const mode = rule.mode || 'original';
+
+      if (mode === 'alpha-asc' || mode === 'alpha-desc') {
+        const direction = mode === 'alpha-desc' ? -1 : 1;
+        return direction * this._rowSortCollator.compare(
+          a.label,
+          b.label
+        );
+      }
+
+      if (
+        (mode === 'field-asc' || mode === 'field-desc') &&
+        rule.field
+      ) {
+        const aValue = this._getGroupSortValue(a.records, rule.field);
+        const bValue = this._getGroupSortValue(b.records, rule.field);
+
+        if (aValue === null && bValue !== null) return 1;
+        if (aValue !== null && bValue === null) return -1;
+
+        if (aValue !== null && bValue !== null) {
+          const direction = mode === 'field-desc' ? -1 : 1;
+          const comparison = this._compareGroupSortValues(
+            aValue,
+            bValue
+          );
+          if (comparison !== 0) return direction * comparison;
+        }
+
+        return this._rowSortCollator.compare(a.label, b.label);
+      }
+
+      return 0;
+    };
+
+    const finalize = childrenMap => {
+      const siblings = Array.from(childrenMap.values());
+      siblings.sort(compareNodes);
+
+      return siblings.map(node => ({
+        label: node.label,
+        field: node.field,
+        sourceLevel: node.sourceLevel,
+        level: node.level,
+        rowPath: node.rowPath,
+        rowStateKey: JSON.stringify(node.statePath),
+        expanded: node.level === 0,
+        children: finalize(node.children),
+        values: this._computeValues(node.records, colCombinations),
+        recordCount: node.records.length,
+        directRecordCount: node.directRecordCount,
+        tooltipTupleIds: this._getTooltipTupleIds(node.records),
+        drillTupleIds: this._getDrillTupleIds(node.records)
+      }));
+    };
+
+    return finalize(root.children);
+  }
+
   _buildRowTree(records, level, colCombinations, parentLabels = []) {
       if (level >= this.rowFields.length) return [];
 
@@ -962,6 +1128,7 @@ class PivotEngine {
       valueRanges: {},
       config: {
         rowFields: this.rowFields,
+        raggedHierarchy: this.raggedHierarchy,
         colFields: this.colFields,
         valueFields: this.valueFields
       }
