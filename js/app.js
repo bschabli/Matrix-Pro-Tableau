@@ -44,45 +44,54 @@ class MatrixApp {
       // 1. Initialize Tableau Extensions API
       await this.connector.initialize(() => this._openConfigDialog());
 
-      // 2. Load saved configuration
+      // 2. Load the workbook configuration.
       this.config = this.connector.loadConfig();
 
-      // For Viz Extensions, always set worksheetName to the current sheet
+      // For Viz Extensions, use the current worksheet.
       const wsNames = this.connector.getWorksheetNames();
       if (this.connector.isVizExtension && wsNames.length > 0) {
         if (!this.config) {
-          this.config = { worksheetName: wsNames[0], rowFields: [], colFields: [], valueFields: [], theme: 'theme-light' };
+          this.config = {
+            worksheetName: wsNames[0],
+            rowFields: [],
+            colFields: [],
+            valueFields: [],
+            theme: 'theme-light'
+          };
         } else {
           this.config.worksheetName = wsNames[0];
         }
       }
 
-      // Remember the workbook defaults separately from personal settings.
-      this._baseColumnSettings = {
-        columnOrder: [...(this.config?.columnOrder || [])],
-        hiddenColumns: [...(this.config?.hiddenColumns || [])],
-        columnWidths: { ...(this.config?.columnWidths || {}) }
-      };
-
-      // Read the personal Tableau parameter before the initial render.
-      await this._setupPersonalState();
-
-      await this._setupSignParameterListener();
-
-      // Apply theme class and saved language
-      const currentTheme = (this.config && this.config.theme) ? this.config.theme : 'theme-light';
+      // 3. Apply the saved theme before any further asynchronous setup.
+      // Replacing body.className removes "theme-pending" and reveals the
+      // existing loading overlay immediately in the correct theme.
+      const currentTheme = this.config?.theme || 'theme-light';
       document.body.className = currentTheme;
+
+      const appEl = document.getElementById('app');
+      if (appEl) appEl.className = currentTheme;
 
       this._applyVisibilityClasses();
 
       const currentLang = this.config?.language || 'de';
       if (typeof applyI18n === 'function') applyI18n(currentLang);
 
+      // Remember workbook defaults separately from personal settings.
+      this._baseColumnSettings = {
+        columnOrder: [...(this.config?.columnOrder || [])],
+        hiddenColumns: [...(this.config?.hiddenColumns || [])],
+        columnWidths: { ...(this.config?.columnWidths || {}) }
+      };
+
+      // 4. Restore personal Tableau settings after applying the theme.
+      await this._setupPersonalState();
+      await this._setupSignParameterListener();
+
       if (this.config && this.config.worksheetName) {
-        // Always attempt to refresh: encodings come from Tableau Marks card shelves
+        // Encodings always come from the Tableau Marks card shelves.
         await this._refresh();
 
-        // Register event listeners for data changes
         this.connector.registerDataChangeListener(
           this.config.worksheetName,
           () => this._onDataChanged()
@@ -91,11 +100,13 @@ class MatrixApp {
         this._showWelcome();
       }
 
-      // 3. Wire up toolbar buttons
+      // 5. Wire up toolbar buttons.
       this._bindToolbar();
-
     } catch (err) {
       console.error('[MatrixApp] Initialization error:', err);
+
+      // An initialization error must never remain behind a hidden shell.
+      document.body.classList.remove('theme-pending');
       this._showError(err);
     }
   }
